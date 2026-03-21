@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTransactions } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
+import { getProfile } from '@/app/actions/profile'
 import { CalendarView } from '@/components/calendar-view'
 import { CategoryManager } from '@/components/category-manager'
 import { MonthPicker } from '@/components/month-picker'
+import { ProfileDialog } from '@/components/profile-dialog'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 
@@ -22,12 +24,14 @@ export default async function DashboardPage({
   const year = yearParam ? parseInt(yearParam) : now.getFullYear()
   const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
 
-  const [transactions, categories] = await Promise.all([
+  const [transactions, categories, profile] = await Promise.all([
     getTransactions(year, month),
     getCategories(),
+    getProfile(),
   ])
 
   const monthlyTotal = transactions.reduce((sum, tx) => sum + tx.amount, 0)
+  const nickname = profile?.nickname ?? user.email ?? ''
 
   return (
     <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-6">
@@ -36,6 +40,7 @@ export default async function DashboardPage({
         <h1 className="text-2xl font-bold">做伙</h1>
         <div className="flex items-center gap-1">
           <CategoryManager initialCategories={categories} />
+          <ProfileDialog email={user.email ?? ''} nickname={nickname} />
           <form action={logout}>
             <Button variant="ghost" size="sm" type="submit">登出</Button>
           </form>
@@ -63,7 +68,8 @@ export default async function DashboardPage({
         month={month}
         transactions={transactions}
         categories={categories}
-        userEmail={user.email ?? ''}
+        currentUserId={user.id}
+        userNickname={nickname}
       />
     </div>
   )

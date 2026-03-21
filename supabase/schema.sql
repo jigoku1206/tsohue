@@ -48,3 +48,21 @@ alter table public.categories enable row level security;
 create policy "users_manage_own_categories" on public.categories
   for all using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ─── Profiles ─────────────────────────────────────────────────────────────────
+-- Run this migration if the profiles table does not yet exist.
+
+create table if not exists public.profiles (
+  id          uuid primary key references auth.users(id) on delete cascade,
+  nickname    text not null,
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+create policy "users_read_all_profiles" on public.profiles
+  for select using (auth.role() = 'authenticated');
+
+create policy "users_manage_own_profile" on public.profiles
+  for all using (auth.uid() = id)
+  with check (auth.uid() = id);

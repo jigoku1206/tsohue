@@ -18,9 +18,11 @@ function formatNTD(amount: number) {
 export function TransactionList({
   transactions,
   categories,
+  currentUserId,
 }: {
   transactions: Transaction[]
   categories: Category[]
+  currentUserId: string
 }) {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editing, setEditing] = useState<Transaction | null>(null)
@@ -47,44 +49,49 @@ export function TransactionList({
   return (
     <>
       <ul className="flex flex-col gap-2">
-        {transactions.map((tx) => (
-          <li key={tx.id} className="flex items-center justify-between p-4 rounded-lg border bg-card gap-2">
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold">{formatNTD(tx.amount)}</span>
-                <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{tx.category}</span>
-                {tx.subcategory && (
-                  <span className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground">
-                    {tx.subcategory}
-                  </span>
-                )}
+        {transactions.map((tx) => {
+          const isOwner = tx.user_id === currentUserId
+          return (
+            <li key={tx.id} className="flex items-center justify-between p-4 rounded-lg border bg-card gap-2">
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold">{formatNTD(tx.amount)}</span>
+                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{tx.category}</span>
+                  {tx.subcategory && (
+                    <span className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground">
+                      {tx.subcategory}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground truncate">
+                  {tx.date} · 付款人：{tx.paid_by}
+                  {tx.note && ` · ${tx.note}`}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground truncate">
-                {tx.date} · 付款人：{tx.paid_by}
-                {tx.note && ` · ${tx.note}`}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditing(tx)}
-                className="h-8 px-2 text-xs"
-              >
-                編輯
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(tx.id)}
-                disabled={deleting === tx.id}
-                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-              >
-                刪除
-              </Button>
-            </div>
-          </li>
-        ))}
+              {isOwner && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditing(tx)}
+                    className="h-8 px-2 text-xs"
+                  >
+                    編輯
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(tx.id)}
+                    disabled={deleting === tx.id}
+                    className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                  >
+                    刪除
+                  </Button>
+                </div>
+              )}
+            </li>
+          )
+        })}
       </ul>
 
       {editing && (

@@ -22,11 +22,11 @@ import type { Category } from '@/app/actions/categories'
 import { toast } from 'sonner'
 
 export function AddTransactionDialog({
-  userEmail,
+  userNickname,
   categories,
   defaultDate,
 }: {
-  userEmail: string
+  userNickname: string
   categories: Category[]
   defaultDate?: string
 }) {
@@ -120,7 +120,7 @@ export function AddTransactionDialog({
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="paid_by">付款人</Label>
-              <Input id="paid_by" name="paid_by" defaultValue={userEmail} required />
+              <Input id="paid_by" name="paid_by" defaultValue={userNickname} required />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="note">備註</Label>

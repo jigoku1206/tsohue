@@ -29,12 +29,22 @@ export async function register(
 ): Promise<AuthState> {
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signUp({
+  const nickname = (formData.get('nickname') as string)?.trim()
+  if (!nickname) return { error: '請填寫暱稱' }
+
+  const { data, error } = await supabase.auth.signUp({
     email: formData.get('email') as string,
     password: formData.get('password') as string,
   })
 
   if (error) return { error: error.message }
+  if (!data.user) return { error: '註冊失敗，請稍後再試' }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .insert({ id: data.user.id, nickname })
+
+  if (profileError) return { error: profileError.message }
 
   revalidatePath('/', 'layout')
   redirect('/dashboard')

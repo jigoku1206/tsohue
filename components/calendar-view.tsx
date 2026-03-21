@@ -21,13 +21,15 @@ export function CalendarView({
   month,
   transactions,
   categories,
-  userEmail,
+  currentUserId,
+  userNickname,
 }: {
   year: number
   month: number
   transactions: Transaction[]
   categories: Category[]
-  userEmail: string
+  currentUserId: string
+  userNickname: string
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
@@ -124,12 +126,16 @@ export function CalendarView({
             )}
           </div>
           <AddTransactionDialog
-            userEmail={userEmail}
+            userNickname={userNickname}
             categories={categories}
             defaultDate={`${year}-${String(month).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`}
           />
         </div>
-        <TransactionList transactions={selectedTransactions} categories={categories} />
+        <TransactionList
+          transactions={selectedTransactions}
+          categories={categories}
+          currentUserId={currentUserId}
+        />
       </div>
     </div>
   )

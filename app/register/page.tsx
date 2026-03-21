@@ -33,6 +33,10 @@ export default function RegisterPage() {
               </p>
             )}
             <div className="flex flex-col gap-1.5">
+              <Label htmlFor="nickname">暱稱</Label>
+              <Input id="nickname" name="nickname" type="text" required placeholder="你的暱稱" />
+            </div>
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">電子郵件</Label>
               <Input id="email" name="email" type="email" required placeholder="you@example.com" />
             </div>
