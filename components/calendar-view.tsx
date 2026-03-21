@@ -23,6 +23,8 @@ export function CalendarView({
   categories,
   currentUserId,
   userNickname,
+  ledgerId,
+  defaultCurrency,
 }: {
   year: number
   month: number
@@ -30,6 +32,8 @@ export function CalendarView({
   categories: Category[]
   currentUserId: string
   userNickname: string
+  ledgerId?: string
+  defaultCurrency?: string
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
@@ -47,7 +51,10 @@ export function CalendarView({
   }, [transactions])
 
   const selectedTransactions = byDay.get(selectedDay) ?? []
-  const selectedTotal = selectedTransactions.reduce((sum, tx) => sum + tx.amount, 0)
+  const selectedTotal = selectedTransactions.reduce(
+    (sum, tx) => sum + tx.amount * (tx.exchange_rate ?? 1),
+    0
+  )
 
   // Build calendar grid cells (null = empty padding cell)
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay()
@@ -80,7 +87,7 @@ export function CalendarView({
             const isToday = isCurrentMonth && day === today.getDate()
             const isSelected = day === selectedDay
             const dayTxs = byDay.get(day) ?? []
-            const dayTotal = dayTxs.reduce((s, tx) => s + tx.amount, 0)
+            const dayTotal = dayTxs.reduce((s, tx) => s + tx.amount * (tx.exchange_rate ?? 1), 0)
 
             return (
               <button
@@ -129,6 +136,8 @@ export function CalendarView({
             userNickname={userNickname}
             categories={categories}
             defaultDate={`${year}-${String(month).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`}
+            ledgerId={ledgerId}
+            defaultCurrency={defaultCurrency}
           />
         </div>
         <TransactionList

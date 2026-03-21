@@ -4,7 +4,15 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
-export function MonthPicker({ year, month }: { year: number; month: number }) {
+export function MonthPicker({
+  year,
+  month,
+  ledgerId,
+}: {
+  year: number
+  month: number
+  ledgerId?: string
+}) {
   const router = useRouter()
 
   const now = new Date()
@@ -14,7 +22,8 @@ export function MonthPicker({ year, month }: { year: number; month: number }) {
     const d = new Date(year, month - 1 + deltaMonths, 1)
     const y = d.getFullYear()
     const m = d.getMonth() + 1
-    router.push(`/dashboard?year=${y}&month=${m}`)
+    const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
+    router.push(`/dashboard?year=${y}&month=${m}${ledgerQuery}`)
   }
 
   const label = new Intl.DateTimeFormat('zh-TW', {

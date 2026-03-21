@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 export type Profile = {
   id: string
   nickname: string
+  email: string | null
   updated_at: string
 }
 

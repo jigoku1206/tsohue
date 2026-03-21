@@ -5,6 +5,7 @@ import { deleteTransaction, type Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import { Button } from '@/components/ui/button'
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog'
+import { formatAmount } from '@/lib/currencies'
 import { toast } from 'sonner'
 
 function formatNTD(amount: number) {
@@ -55,7 +56,12 @@ export function TransactionList({
             <li key={tx.id} className="flex items-center justify-between p-4 rounded-lg border bg-card gap-2">
               <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold">{formatNTD(tx.amount)}</span>
+                  <span className="font-semibold">{formatAmount(tx.amount, tx.currency ?? 'TWD')}</span>
+                  {tx.currency && tx.currency !== 'TWD' && (
+                    <span className="text-xs text-muted-foreground">
+                      ≈ {formatNTD(tx.amount * (tx.exchange_rate ?? 1))}
+                    </span>
+                  )}
                   <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{tx.category}</span>
                   {tx.subcategory && (
                     <span className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground">

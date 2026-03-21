@@ -42,9 +42,21 @@ export async function register(
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: data.user.id, nickname })
+    .insert({ id: data.user.id, nickname, email: formData.get('email') as string })
 
   if (profileError) return { error: profileError.message }
+
+  // Create the shared public ledger if it doesn't exist yet
+  const { count } = await supabase
+    .from('ledgers')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_public', true)
+
+  if (!count) {
+    await supabase
+      .from('ledgers')
+      .insert({ name: '作伙帳本', owner_id: data.user.id, is_public: true })
+  }
 
   revalidatePath('/', 'layout')
   redirect('/dashboard')
