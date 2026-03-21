@@ -11,6 +11,7 @@ import { ProfileDialog } from '@/components/profile-dialog'
 import { LedgerManager } from '@/components/ledger-manager'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 
 export default async function DashboardPage({
   searchParams,
@@ -59,10 +60,20 @@ export default async function DashboardPage({
   const nickname = profile?.nickname ?? user.email ?? ''
 
   return (
-    <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-6">
+    <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
       {/* Header */}
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">做伙</h1>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/tsohue.jpg"
+            alt="做伙"
+            width={48}
+            height={48}
+            className="object-contain"
+            priority
+          />
+          <span className="text-2xl font-bold">做伙</span>
+        </div>
         <div className="flex items-center gap-1">
           <LedgerManager
             ledgers={ledgers}
