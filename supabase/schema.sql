@@ -24,6 +24,9 @@ create policy "all_users_can_read" on public.transactions
 create policy "users_can_insert_own" on public.transactions
   for insert with check (auth.uid() = user_id);
 
+create policy "users_can_update_own" on public.transactions
+  for update using (auth.uid() = user_id);
+
 create policy "users_can_delete_own" on public.transactions
   for delete using (auth.uid() = user_id);
 

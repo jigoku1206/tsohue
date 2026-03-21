@@ -2,24 +2,32 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTransactions } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
-import { AddTransactionDialog } from '@/components/add-transaction-dialog'
-import { TransactionList } from '@/components/transaction-list'
+import { CalendarView } from '@/components/calendar-view'
 import { CategoryManager } from '@/components/category-manager'
+import { MonthPicker } from '@/components/month-picker'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; month?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/login')
 
+  const { year: yearParam, month: monthParam } = await searchParams
+  const now = new Date()
+  const year = yearParam ? parseInt(yearParam) : now.getFullYear()
+  const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
+
   const [transactions, categories] = await Promise.all([
-    getTransactions(),
+    getTransactions(year, month),
     getCategories(),
   ])
 
-  const total = transactions.reduce((sum, tx) => sum + tx.amount, 0)
+  const monthlyTotal = transactions.reduce((sum, tx) => sum + tx.amount, 0)
 
   return (
     <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-6">
@@ -34,27 +42,29 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {/* Summary */}
-      <div className="rounded-xl border bg-card p-6 flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">本月總支出</p>
-        <p className="text-3xl font-bold">
-          {new Intl.NumberFormat('zh-TW', {
-            style: 'currency',
-            currency: 'TWD',
-            minimumFractionDigits: 0,
-          }).format(total)}
-        </p>
-        <p className="text-xs text-muted-foreground">{user.email}</p>
+      {/* Monthly summary */}
+      <div className="rounded-xl border bg-card px-4 py-3 flex items-center justify-between">
+        <MonthPicker year={year} month={month} />
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">當月總支出</p>
+          <p className="text-xl font-bold">
+            {new Intl.NumberFormat('zh-TW', {
+              style: 'currency',
+              currency: 'TWD',
+              minimumFractionDigits: 0,
+            }).format(monthlyTotal)}
+          </p>
+        </div>
       </div>
 
-      {/* Transaction list */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">消費記錄</h2>
-          <AddTransactionDialog userEmail={user.email ?? ''} categories={categories} />
-        </div>
-        <TransactionList transactions={transactions} />
-      </div>
+      {/* Calendar + daily transactions */}
+      <CalendarView
+        year={year}
+        month={month}
+        transactions={transactions}
+        categories={categories}
+        userEmail={user.email ?? ''}
+      />
     </div>
   )
 }

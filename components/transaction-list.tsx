@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { deleteTransaction, type Transaction } from '@/app/actions/transactions'
+import type { Category } from '@/app/actions/categories'
 import { Button } from '@/components/ui/button'
+import { EditTransactionDialog } from '@/components/edit-transaction-dialog'
 import { toast } from 'sonner'
 
 function formatNTD(amount: number) {
@@ -13,8 +15,15 @@ function formatNTD(amount: number) {
   }).format(amount)
 }
 
-export function TransactionList({ transactions }: { transactions: Transaction[] }) {
+export function TransactionList({
+  transactions,
+  categories,
+}: {
+  transactions: Transaction[]
+  categories: Category[]
+}) {
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Transaction | null>(null)
 
   async function handleDelete(id: string) {
     setDeleting(id)
@@ -36,35 +45,56 @@ export function TransactionList({ transactions }: { transactions: Transaction[] 
   }
 
   return (
-    <ul className="flex flex-col gap-2">
-      {transactions.map((tx) => (
-        <li key={tx.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">{formatNTD(tx.amount)}</span>
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{tx.category}</span>
-              {tx.subcategory && (
-                <span className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground">
-                  {tx.subcategory}
-                </span>
-              )}
+    <>
+      <ul className="flex flex-col gap-2">
+        {transactions.map((tx) => (
+          <li key={tx.id} className="flex items-center justify-between p-4 rounded-lg border bg-card gap-2">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">{formatNTD(tx.amount)}</span>
+                <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{tx.category}</span>
+                {tx.subcategory && (
+                  <span className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground">
+                    {tx.subcategory}
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground truncate">
+                {tx.date} · 付款人：{tx.paid_by}
+                {tx.note && ` · ${tx.note}`}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {tx.date} · 付款人：{tx.paid_by}
-              {tx.note && ` · ${tx.note}`}
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditing(tx)}
+                className="h-8 px-2 text-xs"
+              >
+                編輯
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(tx.id)}
+                disabled={deleting === tx.id}
+                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+              >
+                刪除
+              </Button>
             </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDelete(tx.id)}
-            disabled={deleting === tx.id}
-            className="text-destructive hover:text-destructive"
-          >
-            刪除
-          </Button>
-        </li>
-      ))}
-    </ul>
+          </li>
+        ))}
+      </ul>
+
+      {editing && (
+        <EditTransactionDialog
+          transaction={editing}
+          categories={categories}
+          open={!!editing}
+          onOpenChange={(open) => { if (!open) setEditing(null) }}
+        />
+      )}
+    </>
   )
 }

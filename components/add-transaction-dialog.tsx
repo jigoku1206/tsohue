@@ -24,9 +24,11 @@ import { toast } from 'sonner'
 export function AddTransactionDialog({
   userEmail,
   categories,
+  defaultDate,
 }: {
   userEmail: string
   categories: Category[]
+  defaultDate?: string
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -62,6 +64,7 @@ export function AddTransactionDialog({
   }
 
   const today = new Date().toISOString().split('T')[0]
+  const dateValue = defaultDate ?? today
 
   return (
     <>
@@ -75,7 +78,7 @@ export function AddTransactionDialog({
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="date">日期</Label>
-              <Input id="date" name="date" type="date" defaultValue={today} required />
+              <Input id="date" name="date" type="date" defaultValue={dateValue} required />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="amount">金額（NT$）</Label>
