@@ -69,12 +69,14 @@ function CategoryRow({
   indent = false,
   dragHandle,
   onDelete,
+  onRename,
 }: {
   id: string
   name: string
   indent?: boolean
   dragHandle?: React.ReactNode
   onDelete: () => void
+  onRename: (newName: string) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(name)
@@ -85,7 +87,7 @@ function CategoryRow({
     startTransition(async () => {
       const result = await updateCategory(id, value.trim())
       if (result.error) { toast.error(result.error); setValue(name) }
-      else toast.success('已更新')
+      else { toast.success('已更新'); onRename(value.trim()) }
       setEditing(false)
     })
   }
@@ -269,6 +271,11 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                         <CategoryRow
                           id={cat.id} name={cat.name}
                           dragHandle={parentHandle}
+                          onRename={(newName) =>
+                            setCats((prev) => prev.map((c) =>
+                              c.id === cat.id ? { ...c, name: newName } : c
+                            ))
+                          }
                           onDelete={() => {
                             setCats((prev) => prev.filter((c) => c.id !== cat.id))
                             refresh()
@@ -288,6 +295,15 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                                   <CategoryRow
                                     id={sub.id} name={sub.name} indent
                                     dragHandle={subHandle}
+                                    onRename={(newName) =>
+                                      setCats((prev) => prev.map((c) =>
+                                        c.id === cat.id
+                                          ? { ...c, subcategories: c.subcategories.map((s) =>
+                                              s.id === sub.id ? { ...s, name: newName } : s
+                                            )}
+                                          : c
+                                      ))
+                                    }
                                     onDelete={() => {
                                       setCats((prev) => prev.map((c) =>
                                         c.id === cat.id
