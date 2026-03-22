@@ -50,27 +50,26 @@ export function AmountCalculator({
   })
 
   function inputDigit(d: string) {
-    setState((prev) => {
-      if (prev.justEvaled || prev.waitingForOperand) {
-        const next = d
-        onChange(next)
-        return { ...prev, display: next, justEvaled: false, waitingForOperand: false }
-      }
-      const next = prev.display === '0' ? d : prev.display + d
-      onChange(next)
-      return { ...prev, display: next }
-    })
+    let next: string
+    let nextState: CalcState
+    if (state.justEvaled || state.waitingForOperand) {
+      next = d
+      nextState = { ...state, display: next, justEvaled: false, waitingForOperand: false }
+    } else {
+      next = state.display === '0' ? d : state.display + d
+      nextState = { ...state, display: next }
+    }
+    setState(nextState)
+    onChange(next)
   }
 
   function inputDecimal() {
-    setState((prev) => {
-      if (prev.justEvaled || prev.waitingForOperand) {
-        return { ...prev, display: '0.', justEvaled: false, waitingForOperand: false }
-      }
-      if (prev.display.includes('.')) return prev
-      const next = prev.display + '.'
-      return { ...prev, display: next }
-    })
+    if (state.justEvaled || state.waitingForOperand) {
+      setState({ ...state, display: '0.', justEvaled: false, waitingForOperand: false })
+      return
+    }
+    if (state.display.includes('.')) return
+    setState({ ...state, display: state.display + '.' })
   }
 
   function clear() {
@@ -79,67 +78,61 @@ export function AmountCalculator({
   }
 
   function backspace() {
-    setState((prev) => {
-      if (prev.justEvaled || prev.waitingForOperand) return prev
-      const next = prev.display.length > 1 ? prev.display.slice(0, -1) : '0'
-      onChange(next)
-      return { ...prev, display: next }
-    })
+    if (state.justEvaled || state.waitingForOperand) return
+    const next = state.display.length > 1 ? state.display.slice(0, -1) : '0'
+    setState({ ...state, display: next })
+    onChange(next)
   }
 
   function percent() {
-    setState((prev) => {
-      const result = fmt(parseFloat(prev.display) / 100)
-      onChange(result)
-      return { ...prev, display: result, justEvaled: false, waitingForOperand: false }
-    })
+    const result = fmt(parseFloat(state.display) / 100)
+    setState({ ...state, display: result, justEvaled: false, waitingForOperand: false })
+    onChange(result)
   }
 
   function handleOperator(op: Operator) {
-    setState((prev) => {
-      const current = parseFloat(prev.display)
-      if (prev.stored !== null && prev.operator && !prev.waitingForOperand) {
-        const result = evalOp(prev.stored, current, prev.operator)
-        const resultStr = fmt(result)
-        onChange(resultStr)
-        return {
-          display: resultStr,
-          expression: `${resultStr} ${op}`,
-          stored: result,
-          operator: op,
-          justEvaled: false,
-          waitingForOperand: true,
-        }
-      }
-      return {
-        ...prev,
-        expression: `${prev.display} ${op}`,
+    const current = parseFloat(state.display)
+    if (state.stored !== null && state.operator && !state.waitingForOperand) {
+      const result = evalOp(state.stored, current, state.operator)
+      const resultStr = fmt(result)
+      setState({
+        display: resultStr,
+        expression: `${resultStr} ${op}`,
+        stored: result,
+        operator: op,
+        justEvaled: false,
+        waitingForOperand: true,
+      })
+      onChange(resultStr)
+    } else {
+      setState({
+        ...state,
+        expression: `${state.display} ${op}`,
         stored: current,
         operator: op,
         justEvaled: false,
         waitingForOperand: true,
-      }
-    })
+      })
+    }
   }
 
   function handleEquals() {
-    setState((prev) => {
-      if (prev.stored === null || !prev.operator) {
-        onChange(prev.display)
-        return { ...prev, justEvaled: true }
-      }
-      const result = evalOp(prev.stored, parseFloat(prev.display), prev.operator)
-      const resultStr = fmt(result)
-      onChange(resultStr)
-      return {
-        display: resultStr,
-        expression: '',
-        stored: null,
-        operator: null,
-        justEvaled: true,
-        waitingForOperand: false,
-      }
+    if (state.stored === null || !state.operator) {
+      setState({ ...state, justEvaled: true })
+      onChange(state.display)
+      return
+    }
+    const result = evalOp(state.stored, parseFloat(state.display), state.operator)
+    const resultStr = fmt(result)
+    setState({
+      display: resultStr,
+      expression: '',
+      stored: null,
+      operator: null,
+      justEvaled: true,
+      waitingForOperand: false,
     })
+    onChange(resultStr)
   }
 
   const { display, expression } = state
