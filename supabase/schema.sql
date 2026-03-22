@@ -187,3 +187,22 @@ create policy "transactions_insert" on public.transactions
       )
     )
   );
+
+-- ─── Admin support ────────────────────────────────────────────────────────────
+-- Step 7: add is_admin flag to profiles
+alter table public.profiles add column if not exists is_admin boolean default false;
+
+-- Security-definer helper so RLS policies can read is_admin without recursion
+create or replace function public.is_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce(is_admin, false) from public.profiles where id = auth.uid()
+$$;
+
+-- Allow admins to update/delete any transaction (regular users still own-only)
+drop policy if exists "users_can_update_own" on public.transactions;
+create policy "users_can_update_own" on public.transactions
+  for update using (auth.uid() = user_id or public.is_admin());
+
+drop policy if exists "users_can_delete_own" on public.transactions;
+create policy "users_can_delete_own" on public.transactions
+  for delete using (auth.uid() = user_id or public.is_admin());

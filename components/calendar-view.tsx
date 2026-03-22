@@ -25,6 +25,7 @@ export function CalendarView({
   userNickname,
   ledgerId,
   defaultCurrency,
+  isAdmin,
 }: {
   year: number
   month: number
@@ -34,6 +35,7 @@ export function CalendarView({
   userNickname: string
   ledgerId?: string
   defaultCurrency?: string
+  isAdmin?: boolean
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
@@ -144,6 +146,7 @@ export function CalendarView({
           transactions={selectedTransactions}
           categories={categories}
           currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       </div>
     </div>

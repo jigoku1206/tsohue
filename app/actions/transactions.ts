@@ -73,14 +73,23 @@ export async function addTransaction(formData: FormData) {
   return { error: null }
 }
 
+async function getIsAdmin(supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const { data } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+  return data?.is_admin ?? false
+}
+
 export async function updateTransaction(id: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '未登入' }
 
+  const admin = await getIsAdmin(supabase)
   const currency = (formData.get('currency') as string) || 'TWD'
   const exchangeRate = parseFloat(formData.get('exchange_rate') as string) || 1
-  const { error } = await supabase
+
+  let query = supabase
     .from('transactions')
     .update({
       date: formData.get('date') as string,
@@ -93,8 +102,10 @@ export async function updateTransaction(id: string, formData: FormData) {
       paid_by: formData.get('paid_by') as string,
     })
     .eq('id', id)
-    .eq('user_id', user.id)
 
+  if (!admin) query = query.eq('user_id', user.id)
+
+  const { error } = await query
   if (error) return { error: error.message }
   revalidatePath('/dashboard')
   return { error: null }
@@ -102,7 +113,15 @@ export async function updateTransaction(id: string, formData: FormData) {
 
 export async function deleteTransaction(id: string) {
   const supabase = await createClient()
-  const { error } = await supabase.from('transactions').delete().eq('id', id)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '未登入' }
+
+  const admin = await getIsAdmin(supabase)
+
+  let query = supabase.from('transactions').delete().eq('id', id)
+  if (!admin) query = query.eq('user_id', user.id)
+
+  const { error } = await query
   if (error) return { error: error.message }
   revalidatePath('/dashboard')
   return { error: null }

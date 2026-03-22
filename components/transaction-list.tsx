@@ -36,10 +36,12 @@ export function TransactionList({
   transactions,
   categories,
   currentUserId,
+  isAdmin,
 }: {
   transactions: Transaction[]
   categories: Category[]
   currentUserId: string
+  isAdmin?: boolean
 }) {
   const [detail, setDetail] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -67,7 +69,7 @@ export function TransactionList({
     )
   }
 
-  const isOwner = detail?.user_id === currentUserId
+  const isOwner = detail?.user_id === currentUserId || isAdmin
 
   return (
     <>

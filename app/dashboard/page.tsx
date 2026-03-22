@@ -58,6 +58,7 @@ export default async function DashboardPage({
     0
   )
   const nickname = profile?.nickname ?? user.email ?? ''
+  const isAdmin = profile?.is_admin ?? false
 
   return (
     <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
@@ -113,6 +114,7 @@ export default async function DashboardPage({
         userNickname={nickname}
         ledgerId={currentLedger?.id}
         defaultCurrency={currentLedger?.default_currency}
+        isAdmin={isAdmin}
       />
     </div>
   )

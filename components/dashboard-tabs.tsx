@@ -18,6 +18,7 @@ export function DashboardTabs({
   userNickname,
   ledgerId,
   defaultCurrency,
+  isAdmin,
 }: {
   year: number
   month: number
@@ -27,6 +28,7 @@ export function DashboardTabs({
   userNickname: string
   ledgerId?: string
   defaultCurrency?: string
+  isAdmin?: boolean
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
 
@@ -64,6 +66,7 @@ export function DashboardTabs({
           userNickname={userNickname}
           ledgerId={ledgerId}
           defaultCurrency={defaultCurrency}
+          isAdmin={isAdmin}
         />
       ) : (
         <ReportView

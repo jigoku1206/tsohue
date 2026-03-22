@@ -7,6 +7,7 @@ export type Profile = {
   id: string
   nickname: string
   email: string | null
+  is_admin: boolean
   updated_at: string
 }
 
