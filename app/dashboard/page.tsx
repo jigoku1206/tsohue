@@ -4,7 +4,7 @@ import { getTransactions } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
 import { getProfile } from '@/app/actions/profile'
 import { getLedgers } from '@/app/actions/ledgers'
-import { CalendarView } from '@/components/calendar-view'
+import { DashboardTabs } from '@/components/dashboard-tabs'
 import { CategoryManager } from '@/components/category-manager'
 import { MonthPicker } from '@/components/month-picker'
 import { ProfileDialog } from '@/components/profile-dialog'
@@ -103,8 +103,8 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      {/* Calendar + daily transactions */}
-      <CalendarView
+      {/* Calendar / Report tabs */}
+      <DashboardTabs
         year={year}
         month={month}
         transactions={transactions}
