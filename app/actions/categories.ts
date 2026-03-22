@@ -178,6 +178,25 @@ export async function updateCategory(id: string, name: string) {
   return { error: null }
 }
 
+export async function updateCategoryPositions(
+  updates: { id: string; position: number }[]
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '未登入' }
+
+  for (const { id, position } of updates) {
+    await supabase
+      .from('categories')
+      .update({ position })
+      .eq('id', id)
+      .eq('user_id', user.id)
+  }
+
+  revalidatePath('/dashboard')
+  return {}
+}
+
 export async function deleteCategory(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
