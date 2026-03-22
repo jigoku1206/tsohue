@@ -209,14 +209,15 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
   function handleSubDragEnd(parentId: string, event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    setCats((prev) => prev.map((cat) => {
-      if (cat.id !== parentId) return cat
-      const oldIdx = cat.subcategories.findIndex((s) => s.id === active.id)
-      const newIdx = cat.subcategories.findIndex((s) => s.id === over.id)
-      const next = arrayMove(cat.subcategories, oldIdx, newIdx)
-      savePositions(next.map((s, i) => ({ id: s.id, position: i })))
-      return { ...cat, subcategories: next }
-    }))
+    const parent = cats.find((c) => c.id === parentId)
+    if (!parent) return
+    const oldIdx = parent.subcategories.findIndex((s) => s.id === active.id)
+    const newIdx = parent.subcategories.findIndex((s) => s.id === over.id)
+    const newSubs = arrayMove(parent.subcategories, oldIdx, newIdx)
+    setCats((prev) => prev.map((c) =>
+      c.id === parentId ? { ...c, subcategories: newSubs } : c
+    ))
+    savePositions(newSubs.map((s, i) => ({ id: s.id, position: i })))
   }
 
   function savePositions(updates: { id: string; position: number }[]) {
