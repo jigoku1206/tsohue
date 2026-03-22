@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Pencil, Trash2, ChevronRight } from 'lucide-react'
-import { deleteTransaction, type Transaction } from '@/app/actions/transactions'
+import type { Transaction } from '@/app/actions/transactions'
+import { useActions } from '@/lib/actions-context'
 import type { Category } from '@/app/actions/categories'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,6 +44,7 @@ export function TransactionList({
   currentUserId: string
   isAdmin?: boolean
 }) {
+  const { deleteTransaction } = useActions()
   const [detail, setDetail] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)

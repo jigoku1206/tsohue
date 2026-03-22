@@ -17,8 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { addTransaction } from '@/app/actions/transactions'
-import { fetchExchangeRates } from '@/app/actions/exchange-rates'
+import { useActions } from '@/lib/actions-context'
 import { CURRENCIES, type CurrencyCode, type ExchangeRates } from '@/lib/currencies'
 import type { Category } from '@/app/actions/categories'
 import { AmountCalculator } from '@/components/amount-calculator'
@@ -39,6 +38,8 @@ export function AddTransactionDialog({
   ledgerId?: string
   defaultCurrency?: string
 }) {
+  const { addTransaction, fetchExchangeRates } = useActions()
+
   const resolveCurrency = (c?: string): CurrencyCode =>
     (CURRENCIES.find((x) => x.code === c)?.code ?? 'TWD') as CurrencyCode
 

@@ -12,12 +12,23 @@ import { LedgerManager } from '@/components/ledger-manager'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import { Suspense } from 'react'
+import { LiveActionsProvider } from '@/lib/actions-context'
+import { DemoDashboard } from '@/app/dashboard/demo-dashboard'
 
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ year?: string; month?: string; ledger?: string }>
 }) {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+    return (
+      <Suspense>
+        <DemoDashboard />
+      </Suspense>
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -61,6 +72,7 @@ export default async function DashboardPage({
   const isAdmin = profile?.is_admin ?? false
 
   return (
+    <LiveActionsProvider>
     <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
       {/* Header */}
       <header className="flex items-center justify-between">
@@ -117,5 +129,6 @@ export default async function DashboardPage({
         isAdmin={isAdmin}
       />
     </div>
+    </LiveActionsProvider>
   )
 }

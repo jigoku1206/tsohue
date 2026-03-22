@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,14 @@ import {
 import { register } from '@/app/actions/auth'
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [state, action, isPending] = useActionState(register, null)
+
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+      router.replace('/dashboard')
+    }
+  }, [router])
 
   return (
     <main className="flex items-center justify-center min-h-screen p-4">

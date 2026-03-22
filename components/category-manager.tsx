@@ -26,13 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  createCategory,
-  updateCategory,
-  deleteCategory,
-  updateCategoryPositions,
-  type Category,
-} from '@/app/actions/categories'
+import type { Category } from '@/app/actions/categories'
+import { useActions } from '@/lib/actions-context'
 import { toast } from 'sonner'
 
 // ─── Sortable wrapper ────────────────────────────────────────────────────────
@@ -78,6 +73,7 @@ function CategoryRow({
   onDelete: () => void
   onRename: (newName: string) => void
 }) {
+  const { updateCategory, deleteCategory } = useActions()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(name)
   const [isPending, startTransition] = useTransition()
@@ -141,6 +137,7 @@ function CategoryRow({
 // ─── Add row ─────────────────────────────────────────────────────────────────
 
 function AddRow({ parentId, placeholder, onAdded }: { parentId?: string; placeholder: string; onAdded: () => void }) {
+  const { createCategory } = useActions()
   const [value, setValue] = useState('')
   const [show, setShow] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -185,6 +182,7 @@ function AddRow({ parentId, placeholder, onAdded }: { parentId?: string; placeho
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CategoryManager({ initialCategories }: { initialCategories: Category[] }) {
+  const { updateCategoryPositions } = useActions()
   const [open, setOpen] = useState(false)
   const [cats, setCats] = useState<Category[]>(initialCategories)
   const [, startTransition] = useTransition()

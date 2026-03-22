@@ -19,16 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  getLedgerMembers,
-  getAllUsers,
-  createLedger,
-  updateLedger,
-  deleteLedger,
-  setLedgerMembers,
   type Ledger,
   type LedgerMember,
   type UserProfile,
 } from '@/app/actions/ledgers'
+import { useActions } from '@/lib/actions-context'
 import { CURRENCIES, type CurrencyCode } from '@/lib/currencies'
 import { toast } from 'sonner'
 
@@ -43,6 +38,7 @@ export function LedgerManager({
   currentLedgerId: string
   currentUserId: string
 }) {
+  const { getLedgerMembers, getAllUsers, createLedger, updateLedger, deleteLedger, setLedgerMembers } = useActions()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<Panel>('list')

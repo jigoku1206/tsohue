@@ -6,7 +6,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { ChevronDown, ChevronRight, Download, Upload } from 'lucide-react'
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
-import { importTransactions } from '@/app/actions/import'
+import { useActions } from '@/lib/actions-context'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -104,6 +104,7 @@ export function ReportView({
   categories: Category[]
   ledgerId?: string
 }) {
+  const { importTransactions } = useActions()
   const router = useRouter()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)

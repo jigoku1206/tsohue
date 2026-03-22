@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { updateTransaction, type Transaction } from '@/app/actions/transactions'
-import { fetchExchangeRates } from '@/app/actions/exchange-rates'
+import type { Transaction } from '@/app/actions/transactions'
+import { useActions } from '@/lib/actions-context'
 import { CURRENCIES, type CurrencyCode, type ExchangeRates } from '@/lib/currencies'
 import type { Category } from '@/app/actions/categories'
 import { AmountCalculator } from '@/components/amount-calculator'
@@ -37,6 +37,7 @@ export function EditTransactionDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const { updateTransaction, fetchExchangeRates } = useActions()
   const [loading, setLoading] = useState(false)
   const [amount, setAmount] = useState(String(transaction.amount))
   const [categoryName, setCategoryName] = useState(transaction.category)
