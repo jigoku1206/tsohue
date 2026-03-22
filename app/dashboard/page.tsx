@@ -12,9 +12,8 @@ import { LedgerManager } from '@/components/ledger-manager'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
-import { Suspense } from 'react'
 import { LiveActionsProvider } from '@/lib/actions-context'
-import { DemoDashboard } from '@/app/dashboard/demo-dashboard'
+import { DemoWrapper } from '@/app/dashboard/demo-wrapper'
 
 export default async function DashboardPage({
   searchParams,
@@ -22,11 +21,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ year?: string; month?: string; ledger?: string }>
 }) {
   if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-    return (
-      <Suspense>
-        <DemoDashboard />
-      </Suspense>
-    )
+    return <DemoWrapper />
   }
 
   const supabase = await createClient()
