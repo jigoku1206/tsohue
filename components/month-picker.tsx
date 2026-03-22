@@ -36,7 +36,17 @@ export function MonthPicker({
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 w-8 p-0">
         <ChevronLeftIcon className="size-4" />
       </Button>
-      <span className="text-sm font-medium w-24 text-center">{label}</span>
+      <button
+        onClick={() => {
+          if (!isCurrentMonth) {
+            const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
+            router.push(`/dashboard?year=${now.getFullYear()}&month=${now.getMonth() + 1}${ledgerQuery}`)
+          }
+        }}
+        className={`text-sm font-medium w-24 text-center ${!isCurrentMonth ? 'cursor-pointer hover:text-primary' : 'cursor-default'}`}
+      >
+        {label}
+      </button>
       <Button
         variant="ghost"
         size="sm"
