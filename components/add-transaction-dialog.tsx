@@ -21,6 +21,7 @@ import { addTransaction } from '@/app/actions/transactions'
 import { fetchExchangeRates } from '@/app/actions/exchange-rates'
 import { CURRENCIES, type CurrencyCode, type ExchangeRates } from '@/lib/currencies'
 import type { Category } from '@/app/actions/categories'
+import { AmountCalculator } from '@/components/amount-calculator'
 import { toast } from 'sonner'
 
 const today = () => new Date().toISOString().split('T')[0]
@@ -43,6 +44,7 @@ export function AddTransactionDialog({
 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [amount, setAmount] = useState('0')
   const [categoryName, setCategoryName] = useState('')
   const [subcategoryName, setSubcategoryName] = useState('')
   const [currency, setCurrency] = useState<CurrencyCode>(resolveCurrency(defaultCurrency))
@@ -86,6 +88,7 @@ export function AddTransactionDialog({
 
   function handleClose() {
     setOpen(false)
+    setAmount('0')
     setCategoryName('')
     setSubcategoryName('')
     // currency will be reset by the useEffect above when open becomes false
@@ -106,6 +109,7 @@ export function AddTransactionDialog({
     formData.set('exchange_rate', String(currentRate ?? 1))
     if (ledgerId) formData.set('ledger_id', ledgerId)
 
+    formData.set('amount', amount)
     const result = await addTransaction(formData)
     setLoading(false)
 
@@ -122,7 +126,7 @@ export function AddTransactionDialog({
       <Button onClick={() => setOpen(true)}>+ 新增記錄</Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>新增消費記錄</DialogTitle>
           </DialogHeader>
@@ -139,22 +143,12 @@ export function AddTransactionDialog({
               />
             </div>
 
-            {/* Amount + Currency */}
+            {/* Calculator */}
             <div className="flex flex-col gap-1.5">
-              <Label>金額與幣別</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  min="0"
-                  step={currencyMeta.decimals === 0 ? '1' : '0.01'}
-                  required
-                  placeholder="0"
-                  className="flex-1"
-                />
+              <div className="flex items-center justify-between">
+                <Label>金額</Label>
                 <Select value={currency} onValueChange={(v) => setCurrency(v as CurrencyCode)}>
-                  <SelectTrigger className="w-28 shrink-0">
+                  <SelectTrigger className="w-28 h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -164,8 +158,11 @@ export function AddTransactionDialog({
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Rate hint */}
+              <AmountCalculator
+                key={open ? 'open' : 'closed'}
+                initialValue="0"
+                onChange={setAmount}
+              />
               {currency !== 'TWD' && (
                 <p className={`text-xs ${isFuture ? 'text-destructive' : 'text-muted-foreground'}`}>
                   {loadingRates
@@ -222,7 +219,7 @@ export function AddTransactionDialog({
             </div>
             <Button
               type="submit"
-              disabled={loading || !categoryName || (currency !== 'TWD' && (loadingRates || !currentRate))}
+              disabled={loading || !categoryName || !amount || amount === '0' || (currency !== 'TWD' && (loadingRates || !currentRate))}
             >
               {loading ? '儲存中…' : '儲存'}
             </Button>

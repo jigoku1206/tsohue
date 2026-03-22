@@ -21,6 +21,7 @@ import { updateTransaction, type Transaction } from '@/app/actions/transactions'
 import { fetchExchangeRates } from '@/app/actions/exchange-rates'
 import { CURRENCIES, type CurrencyCode, type ExchangeRates } from '@/lib/currencies'
 import type { Category } from '@/app/actions/categories'
+import { AmountCalculator } from '@/components/amount-calculator'
 import { toast } from 'sonner'
 
 const todayStr = () => new Date().toISOString().split('T')[0]
@@ -37,6 +38,7 @@ export function EditTransactionDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const [loading, setLoading] = useState(false)
+  const [amount, setAmount] = useState(String(transaction.amount))
   const [categoryName, setCategoryName] = useState(transaction.category)
   const [subcategoryName, setSubcategoryName] = useState(transaction.subcategory ?? '')
   const [currency, setCurrency] = useState<CurrencyCode>(
@@ -80,6 +82,7 @@ export function EditTransactionDialog({
     }
     setLoading(true)
     const formData = new FormData(e.currentTarget)
+    formData.set('amount', amount)
     formData.set('category', categoryName)
     formData.set('subcategory', subcategoryName)
     formData.set('currency', currency)
@@ -98,7 +101,7 @@ export function EditTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>編輯消費記錄</DialogTitle>
         </DialogHeader>
@@ -115,22 +118,12 @@ export function EditTransactionDialog({
             />
           </div>
 
-          {/* Amount + Currency */}
+          {/* Calculator */}
           <div className="flex flex-col gap-1.5">
-            <Label>金額與幣別</Label>
-            <div className="flex gap-2">
-              <Input
-                id="amount"
-                name="amount"
-                type="number"
-                min="0"
-                step={currencyMeta.decimals === 0 ? '1' : '0.01'}
-                required
-                defaultValue={transaction.amount}
-                className="flex-1"
-              />
+            <div className="flex items-center justify-between">
+              <Label>金額</Label>
               <Select value={currency} onValueChange={(v) => setCurrency(v as CurrencyCode)}>
-                <SelectTrigger className="w-28 shrink-0">
+                <SelectTrigger className="w-28 h-7 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -140,8 +133,10 @@ export function EditTransactionDialog({
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Rate hint */}
+            <AmountCalculator
+              initialValue={String(transaction.amount)}
+              onChange={setAmount}
+            />
             {currency !== 'TWD' && (
               <p className={`text-xs ${isFuture ? 'text-destructive' : 'text-muted-foreground'}`}>
                 {loadingRates
@@ -200,7 +195,7 @@ export function EditTransactionDialog({
           <div className="flex gap-2">
             <Button
               type="submit"
-              disabled={loading || !categoryName || (currency !== 'TWD' && (loadingRates || !currentRate))}
+              disabled={loading || !categoryName || !amount || amount === '0' || (currency !== 'TWD' && (loadingRates || !currentRate))}
               className="flex-1"
             >
               {loading ? '儲存中…' : '儲存'}
