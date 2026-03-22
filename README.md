@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<p align="center">
+  <img src="public/tsohue.jpg" alt="做伙 Thohue" width="120" />
+</p>
 
-## Getting Started
+<h1 align="center">做伙 Thohue</h1>
 
-First, run the development server:
+<p align="center">
+  輕鬆記錄、即時同步的共同帳本。適合情侶、家庭或小團體。
+</p>
+
+<p align="center">
+  <a href="https://tsohue-demo.vercel.app/dashboard">🌐 線上 Demo</a>
+</p>
+
+---
+
+## 功能特色
+
+- **共同帳本** — 多人共用同一帳本，即時同步每筆支出
+- **多帳本管理** — 建立多個帳本（例如：日常帳本、旅遊帳本），分開管理
+- **多幣別支援** — 支援 TWD、USD、JPY、EUR、CNY，自動換算匯率
+- **月曆檢視** — 以月曆方式瀏覽每日支出，一目了然
+- **報表分析** — 圓餅圖呈現各類別消費比例
+- **CSV 匯入／匯出** — 支援資料備份與批次匯入
+- **類別管理** — 自訂消費類別與子類別，支援拖曳排序
+- **PWA 支援** — 可安裝至手機主畫面，離線瀏覽
+- **Demo 模式** — 無需註冊，資料存於瀏覽器，即開即用
+
+## 技術架構
+
+| 層級 | 技術 |
+|------|------|
+| 前端框架 | Next.js 16 (App Router + Turbopack) |
+| 語言 | TypeScript |
+| 樣式 | Tailwind CSS v4 + shadcn/ui |
+| 資料庫 | Supabase (PostgreSQL + RLS) |
+| 認證 | Supabase Auth（Email / 密碼） |
+| 部署 | Vercel |
+
+---
+
+## 自行部署
+
+### 事前準備
+
+- [Node.js](https://nodejs.org/) 18 以上
+- [Supabase](https://supabase.com/) 帳號（免費方案即可）
+- [Vercel](https://vercel.com/) 帳號（選用，也可本地執行）
+
+### 步驟一：取得原始碼
+
+```bash
+git clone https://github.com/jigoku1206/tsohue.git
+cd tsohue
+npm install
+```
+
+### 步驟二：建立 Supabase 專案
+
+1. 前往 [supabase.com](https://supabase.com/)，建立新專案
+2. 進入 **SQL Editor**，貼上 `supabase/schema.sql` 的全部內容並執行
+3. 至 **Project Settings → API** 頁面，複製以下兩個值：
+   - `Project URL`
+   - `anon public` key
+
+### 步驟三：設定環境變數
+
+```bash
+cp .env.local.example .env.local
+```
+
+編輯 `.env.local`：
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+### 步驟四：本地執行
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+開啟瀏覽器前往 [http://localhost:3000](http://localhost:3000)，即可開始使用。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 步驟五：部署至 Vercel（選用）
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jigoku1206/tsohue)
 
-## Learn More
+或透過 Vercel CLI：
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm i -g vercel
+vercel --prod
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+部署時在 Vercel 的 **Environment Variables** 設定 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_ANON_KEY` 即可。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Demo 模式部署
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+若想建立一個無需資料庫的 Demo 環境，只需在 Vercel 加上一個環境變數：
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+NEXT_PUBLIC_DEMO_MODE=true
+```
+
+Demo 模式下所有資料儲存於瀏覽器 localStorage，不需要 Supabase，任何人都可以直接試用。
+
+---
+
+## 本地開發指令
+
+```bash
+npm run dev    # 啟動開發伺服器
+npm run build  # 正式版建置
+npm run lint   # ESLint 檢查
+```
+
+---
+
+## 關於此專案
+
+> 本專案的程式碼、架構設計、資料庫 Schema、UI 元件與文件，**均由 AI（Claude）全程生成**。
+> 人工參與的部分僅包含：需求定義、功能方向決策、代碼 Review 與實際測試驗證。
+>
+> 此專案作為 AI 輔助開發的實驗性成果公開，歡迎參考或延伸使用。
