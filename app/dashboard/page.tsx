@@ -20,7 +20,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ year?: string; month?: string; ledger?: string }>
 }) {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return <DemoWrapper />
   }
 
