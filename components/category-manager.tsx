@@ -45,6 +45,8 @@ function CategoryRow({
   }
 
   function handleDelete() {
+    const label = indent ? `子類別「${name}」` : `類別「${name}」及其所有子類別`
+    if (!confirm(`確定要刪除${label}？`)) return
     startTransition(async () => {
       const result = await deleteCategory(id)
       if (result.error) toast.error(result.error)
