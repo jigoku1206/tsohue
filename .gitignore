@@ -43,3 +43,7 @@ next-env.d.ts
 
 # Claude Code local settings
 .claude/
+
+# Planning / design docs
+Plan.md
+*.plan.md
