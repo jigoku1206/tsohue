@@ -12,6 +12,7 @@ import { LedgerManager } from '@/components/ledger-manager'
 import { logout } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import Link from 'next/link'
 import { LiveActionsProvider } from '@/lib/actions-context'
 import { DemoWrapper } from '@/app/dashboard/demo-wrapper'
 
@@ -71,7 +72,7 @@ export default async function DashboardPage({
     <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
       {/* Header */}
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <Image
             src="/tsohue.jpg"
             alt="做伙"
@@ -81,7 +82,7 @@ export default async function DashboardPage({
             priority
           />
           <span className="text-2xl font-bold">做伙</span>
-        </div>
+        </Link>
         <div className="flex items-center gap-1">
           <LedgerManager
             ledgers={ledgers}

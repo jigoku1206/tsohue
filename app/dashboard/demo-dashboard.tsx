@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ActionsContext } from '@/lib/actions-context'
 import { createDemoActions } from '@/lib/demo/actions'
@@ -67,7 +68,7 @@ export function DemoDashboard() {
       <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
         {/* Header */}
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <Image
               src="/tsohue.jpg"
               alt="做伙"
@@ -77,7 +78,7 @@ export function DemoDashboard() {
               priority
             />
             <span className="text-2xl font-bold">做伙</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-1">
             <LedgerManager
               ledgers={state.ledgers}
