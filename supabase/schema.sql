@@ -52,6 +52,7 @@ create table if not exists public.profiles (
 
 alter table public.profiles add column if not exists email text unique;
 alter table public.profiles add column if not exists is_admin boolean default false;
+alter table public.profiles add column if not exists categories_seeded boolean default false;
 
 alter table public.profiles enable row level security;
 

@@ -93,32 +93,49 @@ export async function getCategories(): Promise<Category[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('position', { ascending: true })
-    .order('created_at', { ascending: true })
+  // Check if defaults have already been seeded for this user
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('categories_seeded')
+    .eq('id', user.id)
+    .single()
 
-  if (error) return []
+  let rows: { id: string; name: string; parent_id: string | null; position: number }[] = []
 
-  const existingTopLevel = (data ?? []).filter((c) => c.parent_id === null)
-  const existingNames = new Set(existingTopLevel.map((c) => c.name as string))
+  if (!profile?.categories_seeded) {
+    // First time: fetch existing, seed missing defaults, mark as seeded
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
 
-  // Always ensure all defaults exist (additive, never destructive)
-  await ensureDefaults(user.id, existingNames)
+    const existingNames = new Set(
+      (data ?? []).filter((c) => c.parent_id === null).map((c) => c.name as string)
+    )
+    await ensureDefaults(user.id, existingNames)
+    await supabase.from('profiles').update({ categories_seeded: true }).eq('id', user.id)
 
-  // If we added anything, re-fetch
-  const needsRefetch = DEFAULT_CATEGORIES.some((d) => !existingNames.has(d.name))
-  const rows = needsRefetch
-    ? (await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('position', { ascending: true })
-        .order('created_at', { ascending: true })
-      ).data ?? []
-    : data ?? []
+    // Re-fetch after seeding
+    rows = (await supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
+    ).data ?? []
+  } else {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (error) return []
+    rows = data ?? []
+  }
 
   const parents = rows.filter((c) => c.parent_id === null)
   return parents.map((p) => ({
