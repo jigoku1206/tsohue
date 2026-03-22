@@ -1,9 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { Pencil, Trash2, ChevronRight } from 'lucide-react'
 import { deleteTransaction, type Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog'
 import { formatAmount } from '@/lib/currencies'
 import { toast } from 'sonner'
@@ -16,6 +23,15 @@ function formatNTD(amount: number) {
   }).format(amount)
 }
 
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between items-start gap-4 py-2.5 border-b last:border-0">
+      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm text-right">{value}</span>
+    </div>
+  )
+}
+
 export function TransactionList({
   transactions,
   categories,
@@ -25,17 +41,21 @@ export function TransactionList({
   categories: Category[]
   currentUserId: string
 }) {
-  const [deleting, setDeleting] = useState<string | null>(null)
-  const [editing, setEditing] = useState<Transaction | null>(null)
+  const [detail, setDetail] = useState<Transaction | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [editing, setEditing] = useState(false)
 
-  async function handleDelete(id: string) {
-    setDeleting(id)
-    const result = await deleteTransaction(id)
-    setDeleting(null)
+  async function handleDelete() {
+    if (!detail) return
+    if (!confirm(`確定要刪除這筆記錄？`)) return
+    setDeleting(true)
+    const result = await deleteTransaction(detail.id)
+    setDeleting(false)
     if (result?.error) {
       toast.error(result.error)
     } else {
       toast.success('已刪除')
+      setDetail(null)
     }
   }
 
@@ -47,13 +67,17 @@ export function TransactionList({
     )
   }
 
+  const isOwner = detail?.user_id === currentUserId
+
   return (
     <>
       <ul className="flex flex-col gap-2">
-        {transactions.map((tx) => {
-          const isOwner = tx.user_id === currentUserId
-          return (
-            <li key={tx.id} className="flex items-center justify-between p-4 rounded-lg border bg-card gap-2">
+        {transactions.map((tx) => (
+          <li key={tx.id}>
+            <button
+              className="w-full flex items-center justify-between p-4 rounded-lg border bg-card gap-2 hover:bg-muted/50 transition-colors text-left"
+              onClick={() => setDetail(tx)}
+            >
               <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold">{formatAmount(tx.amount, tx.currency ?? 'TWD')}</span>
@@ -70,42 +94,87 @@ export function TransactionList({
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground truncate">
-                  {tx.date} · 付款人：{tx.paid_by}
+                  {tx.paid_by}
                   {tx.note && ` · ${tx.note}`}
                 </div>
               </div>
-              {isOwner && (
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditing(tx)}
-                    className="h-8 px-2 text-xs"
-                  >
-                    編輯
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(tx.id)}
-                    disabled={deleting === tx.id}
-                    className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-                  >
-                    刪除
-                  </Button>
-                </div>
-              )}
-            </li>
-          )
-        })}
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          </li>
+        ))}
       </ul>
 
-      {editing && (
+      {/* Detail dialog */}
+      {detail && (
+        <Dialog open={!!detail} onOpenChange={(open) => { if (!open) setDetail(null) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>消費詳細</DialogTitle>
+            </DialogHeader>
+
+            {/* Amount hero */}
+            <div className="bg-muted rounded-xl px-4 py-5 text-center my-1">
+              <p className="text-3xl font-bold">{formatAmount(detail.amount, detail.currency ?? 'TWD')}</p>
+              {detail.currency && detail.currency !== 'TWD' && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  ≈ {formatNTD(detail.amount * (detail.exchange_rate ?? 1))} TWD
+                </p>
+              )}
+            </div>
+
+            <div className="px-1">
+              <DetailRow label="日期" value={detail.date} />
+              <DetailRow label="類別" value={
+                <span className="flex items-center gap-1.5 justify-end flex-wrap">
+                  <span className="bg-muted px-1.5 py-0.5 rounded text-xs">{detail.category}</span>
+                  {detail.subcategory && (
+                    <span className="bg-muted/60 px-1.5 py-0.5 rounded text-xs text-muted-foreground">
+                      {detail.subcategory}
+                    </span>
+                  )}
+                </span>
+              } />
+              <DetailRow label="付款人" value={detail.paid_by} />
+              {detail.currency !== 'TWD' && (
+                <DetailRow label="幣別／匯率" value={`${detail.currency}（1:${(detail.exchange_rate ?? 1).toFixed(4)}）`} />
+              )}
+              {detail.note && <DetailRow label="備註" value={detail.note} />}
+            </div>
+
+            {isOwner && (
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-1.5"
+                  onClick={() => setEditing(true)}
+                >
+                  <Pencil className="h-4 w-4" />編輯
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 gap-1.5"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  <Trash2 className="h-4 w-4" />{deleting ? '刪除中…' : '刪除'}
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {editing && detail && (
         <EditTransactionDialog
-          transaction={editing}
+          transaction={detail}
           categories={categories}
-          open={!!editing}
-          onOpenChange={(open) => { if (!open) setEditing(null) }}
+          open={editing}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditing(false)
+              setDetail(null)
+            }
+          }}
         />
       )}
     </>
