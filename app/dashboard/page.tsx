@@ -4,9 +4,8 @@ import { getTransactions } from '@/app/actions/transactions'
 import { getCategories } from '@/app/actions/categories'
 import { getProfile } from '@/app/actions/profile'
 import { getLedgers } from '@/app/actions/ledgers'
-import { DashboardTabs } from '@/components/dashboard-tabs'
 import { CategoryManager } from '@/components/category-manager'
-import { MonthPicker } from '@/components/month-picker'
+import { MonthController } from '@/components/month-controller'
 import { ProfileDialog } from '@/components/profile-dialog'
 import { LedgerManager } from '@/components/ledger-manager'
 import { logout } from '@/app/actions/auth'
@@ -60,10 +59,6 @@ export default async function DashboardPage({
 
   const transactions = await getTransactions(year, month, currentLedger?.id)
 
-  const monthlyTotal = transactions.reduce(
-    (sum, tx) => sum + tx.amount * (tx.exchange_rate ?? 1),
-    0
-  )
   const nickname = profile?.nickname ?? user.email ?? ''
   const isAdmin = profile?.is_admin ?? false
 
@@ -97,26 +92,10 @@ export default async function DashboardPage({
         </div>
       </header>
 
-      {/* Monthly summary */}
-      <div className="rounded-xl border bg-card px-4 py-3 flex items-center justify-between">
-        <MonthPicker year={year} month={month} ledgerId={currentLedger?.id} />
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">當月總支出</p>
-          <p className="text-xl font-bold">
-            {new Intl.NumberFormat('zh-TW', {
-              style: 'currency',
-              currency: 'TWD',
-              minimumFractionDigits: 0,
-            }).format(monthlyTotal)}
-          </p>
-        </div>
-      </div>
-
-      {/* Calendar / Report tabs */}
-      <DashboardTabs
-        year={year}
-        month={month}
-        transactions={transactions}
+      <MonthController
+        initialYear={year}
+        initialMonth={month}
+        initialTransactions={transactions}
         categories={categories}
         currentUserId={user.id}
         userNickname={nickname}

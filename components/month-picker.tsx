@@ -8,10 +8,14 @@ export function MonthPicker({
   year,
   month,
   ledgerId,
+  onNavigate,
+  onNavigateToToday,
 }: {
   year: number
   month: number
   ledgerId?: string
+  onNavigate?: (deltaMonths: number) => void
+  onNavigateToToday?: () => void
 }) {
   const router = useRouter()
 
@@ -19,11 +23,25 @@ export function MonthPicker({
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
   function navigate(deltaMonths: number) {
+    if (onNavigate) {
+      onNavigate(deltaMonths)
+      return
+    }
     const d = new Date(year, month - 1 + deltaMonths, 1)
     const y = d.getFullYear()
     const m = d.getMonth() + 1
     const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
     router.push(`/dashboard?year=${y}&month=${m}${ledgerQuery}`)
+  }
+
+  function handleLabelClick() {
+    if (isCurrentMonth) return
+    if (onNavigateToToday) {
+      onNavigateToToday()
+      return
+    }
+    const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
+    router.push(`/dashboard?year=${now.getFullYear()}&month=${now.getMonth() + 1}${ledgerQuery}`)
   }
 
   const label = new Intl.DateTimeFormat('zh-TW', {
@@ -37,12 +55,7 @@ export function MonthPicker({
         <ChevronLeftIcon className="size-4" />
       </Button>
       <button
-        onClick={() => {
-          if (!isCurrentMonth) {
-            const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
-            router.push(`/dashboard?year=${now.getFullYear()}&month=${now.getMonth() + 1}${ledgerQuery}`)
-          }
-        }}
+        onClick={handleLabelClick}
         className={`text-sm font-medium w-24 text-center ${!isCurrentMonth ? 'cursor-pointer hover:text-primary' : 'cursor-default'}`}
       >
         {label}
