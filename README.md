@@ -24,7 +24,6 @@
 - **CSV 匯入／匯出** — 支援資料備份與批次匯入
 - **類別管理** — 自訂消費類別與子類別，支援拖曳排序
 - **PWA 支援** — 可安裝至手機主畫面，離線瀏覽
-- **Demo 模式** — 無需註冊，資料存於瀏覽器，即開即用
 
 ## 技術架構
 
@@ -96,18 +95,6 @@ vercel --prod
 ```
 
 部署時在 Vercel 的 **Environment Variables** 設定 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_ANON_KEY` 即可。
-
----
-
-## Demo 模式部署
-
-若想建立一個無需資料庫的 Demo 環境，只需在 Vercel 加上一個環境變數：
-
-```env
-NEXT_PUBLIC_DEMO_MODE=true
-```
-
-Demo 模式下所有資料儲存於瀏覽器 localStorage，不需要 Supabase，任何人都可以直接試用。
 
 ---
 
