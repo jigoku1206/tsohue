@@ -33,10 +33,12 @@ export function LedgerManager({
   ledgers: initialLedgers,
   currentLedgerId,
   currentUserId,
+  onSwitchLedger,
 }: {
   ledgers: Ledger[]
   currentLedgerId: string
   currentUserId: string
+  onSwitchLedger?: (id: string) => void
 }) {
   const { getLedgerMembers, getAllUsers, createLedger, updateLedger, deleteLedger, setLedgerMembers } = useActions()
   const router = useRouter()
@@ -69,7 +71,11 @@ export function LedgerManager({
   }
 
   function switchLedger(id: string) {
-    router.push(`/dashboard?ledger=${id}`)
+    if (onSwitchLedger) {
+      onSwitchLedger(id)
+    } else {
+      router.push(`/dashboard?ledger=${id}`)
+    }
     closeDialog()
   }
 

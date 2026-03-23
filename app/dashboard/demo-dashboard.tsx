@@ -32,7 +32,9 @@ export function DemoDashboard() {
   const [month, setMonth] = useState(() =>
     searchParams.get('month') ? parseInt(searchParams.get('month')!) : now.getMonth() + 1
   )
-  const ledgerParam = searchParams.get('ledger')
+  const [currentLedgerId, setCurrentLedgerId] = useState<string | null>(
+    () => searchParams.get('ledger')
+  )
 
   const [state, setState] = useState<DemoState>(loadOrSeed)
 
@@ -40,8 +42,8 @@ export function DemoDashboard() {
 
   // Resolve current ledger
   const publicLedger = state.ledgers.find((l) => l.is_public)
-  const currentLedger = ledgerParam
-    ? (state.ledgers.find((l) => l.id === ledgerParam) ?? publicLedger)
+  const currentLedger = currentLedgerId
+    ? (state.ledgers.find((l) => l.id === currentLedgerId) ?? publicLedger)
     : publicLedger
 
   // Filter transactions for current month + ledger
@@ -88,6 +90,10 @@ export function DemoDashboard() {
               ledgers={state.ledgers}
               currentLedgerId={currentLedger?.id ?? DEMO_PUBLIC_LEDGER_ID}
               currentUserId={DEMO_USER_ID}
+              onSwitchLedger={(id) => {
+                setCurrentLedgerId(id)
+                window.history.replaceState(null, '', `/dashboard?year=${year}&month=${month}&ledger=${id}`)
+              }}
             />
             <CategoryManager initialCategories={state.categories} />
             <DemoProfileDialog nickname={state.profile.nickname} />
