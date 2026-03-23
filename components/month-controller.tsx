@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { MonthPicker } from '@/components/month-picker'
 import { DashboardTabs } from '@/components/dashboard-tabs'
 import { getTransactions, type Transaction } from '@/app/actions/transactions'
@@ -28,7 +27,6 @@ export function MonthController({
   defaultCurrency?: string
   isAdmin?: boolean
 }) {
-  const router = useRouter()
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [transactions, setTransactions] = useState(initialTransactions)
@@ -46,7 +44,7 @@ export function MonthController({
       setMonth(m)
       setTransactions(newTransactions)
       const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
-      router.replace(`/dashboard?year=${y}&month=${m}${ledgerQuery}`, { scroll: false })
+      window.history.replaceState(null, '', `/dashboard?year=${y}&month=${m}${ledgerQuery}`)
     })
   }
 

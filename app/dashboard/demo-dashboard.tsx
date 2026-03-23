@@ -26,8 +26,12 @@ export function DemoDashboard() {
   const router = useRouter()
 
   const now = new Date()
-  const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : now.getFullYear()
-  const month = searchParams.get('month') ? parseInt(searchParams.get('month')!) : now.getMonth() + 1
+  const [year, setYear] = useState(() =>
+    searchParams.get('year') ? parseInt(searchParams.get('year')!) : now.getFullYear()
+  )
+  const [month, setMonth] = useState(() =>
+    searchParams.get('month') ? parseInt(searchParams.get('month')!) : now.getMonth() + 1
+  )
   const ledgerParam = searchParams.get('ledger')
 
   const [state, setState] = useState<DemoState>(loadOrSeed)
@@ -104,7 +108,26 @@ export function DemoDashboard() {
 
         {/* Monthly summary */}
         <div className="rounded-xl border bg-card px-4 py-3 flex items-center justify-between">
-          <MonthPicker year={year} month={month} ledgerId={currentLedger?.id} />
+          <MonthPicker
+            year={year}
+            month={month}
+            onNavigate={(delta) => {
+              const d = new Date(year, month - 1 + delta, 1)
+              const y = d.getFullYear()
+              const m = d.getMonth() + 1
+              setYear(y)
+              setMonth(m)
+              const ledgerQuery = currentLedger?.id ? `&ledger=${currentLedger.id}` : ''
+              window.history.replaceState(null, '', `/dashboard?year=${y}&month=${m}${ledgerQuery}`)
+            }}
+            onNavigateToToday={() => {
+              const n = new Date()
+              setYear(n.getFullYear())
+              setMonth(n.getMonth() + 1)
+              const ledgerQuery = currentLedger?.id ? `&ledger=${currentLedger.id}` : ''
+              window.history.replaceState(null, '', `/dashboard?year=${n.getFullYear()}&month=${n.getMonth() + 1}${ledgerQuery}`)
+            }}
+          />
           <div className="text-right">
             <p className="text-xs text-muted-foreground">當月總支出</p>
             <p className="text-xl font-bold">
