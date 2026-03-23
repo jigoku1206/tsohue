@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/tsohue.jpg" alt="做伙 Tsohue" width="120" />
+  <img src="public/tsohue_banner.jpg" alt="做伙 Tsohue Banner" width="640" />
 </p>
 
 <h1 align="center">做伙 Tsohue</h1>
