@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/tsohue.jpg" alt="做伙 Thohue" width="120" />
+  <img src="public/tsohue.jpg" alt="做伙 Tsohue" width="120" />
 </p>
 
-<h1 align="center">做伙 Thohue</h1>
+<h1 align="center">做伙 Tsohue</h1>
 
 <p align="center">
   輕鬆記錄、即時同步的共同帳本。適合情侶、家庭或小團體。

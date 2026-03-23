@@ -9,7 +9,7 @@ const geistSans = Geist({
 })
 
 export const metadata: Metadata = {
-  title: '做伙 Thohue',
+  title: '做伙 Tsohue',
   description: '輕鬆記錄、共同分攤的家庭帳本',
   appleWebApp: {
     capable: true,
