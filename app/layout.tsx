@@ -15,12 +15,14 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: '做伙',
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
+    startupImage: '/tsohue.jpg',
   },
 }
 
 export const viewport: Viewport = {
   themeColor: '#ffffff',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
