@@ -1,19 +1,12 @@
-'use client'
-
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { buttonVariants } from '@/components/ui/button'
 
 export default function Home() {
-  const router = useRouter()
-
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-      router.replace('/dashboard')
-    }
-  }, [router])
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+    redirect('/dashboard')
+  }
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen gap-6 p-8 text-center">
