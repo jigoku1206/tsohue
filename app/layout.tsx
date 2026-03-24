@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
+import { SplashProvider } from './splash-provider'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -30,7 +31,9 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" className={`${geistSans.variable} h-full antialiased`} style={{ backgroundColor: '#ffffff' }}>
       <body className="min-h-full flex flex-col">
-        {children}
+        <SplashProvider>
+          {children}
+        </SplashProvider>
         <Toaster />
       </body>
     </html>
