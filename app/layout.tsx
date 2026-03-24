@@ -16,7 +16,13 @@ export const metadata: Metadata = {
     capable: true,
     title: '做伙',
     statusBarStyle: 'black-translucent',
-    startupImage: '/tsohue.jpg',
+    startupImage: [
+      {
+        url: '/apple-touch-startup-image.png',
+        media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)',
+      },
+      '/apple-touch-startup-image.png',
+    ],
   },
 }
 
