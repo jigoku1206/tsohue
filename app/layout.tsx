@@ -19,9 +19,8 @@ export const metadata: Metadata = {
     startupImage: [
       {
         url: '/apple-touch-startup-image.png',
-        media: '(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)',
+        media: '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)',
       },
-      '/apple-touch-startup-image.png',
     ],
   },
 }
@@ -38,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-TW" className={`${geistSans.variable} h-full antialiased`} style={{ backgroundColor: '#ffffff' }}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
         <SplashProvider>
           {children}
         </SplashProvider>
