@@ -1,11 +1,10 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getTransactions } from '@/app/actions/transactions'
-import { getCategories } from '@/app/actions/categories'
 import { getProfile } from '@/app/actions/profile'
 import { getLedgers } from '@/app/actions/ledgers'
+import { getCategories } from '@/app/actions/categories'
 import { CategoryManager } from '@/components/category-manager'
-import { MonthController } from '@/components/month-controller'
 import { ProfileDialog } from '@/components/profile-dialog'
 import { LedgerManager } from '@/components/ledger-manager'
 import { logout } from '@/app/actions/auth'
@@ -14,6 +13,41 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { LiveActionsProvider } from '@/lib/actions-context'
 import { DemoWrapper } from '@/app/dashboard/demo-wrapper'
+import { TransactionSection } from '@/app/dashboard/transaction-section'
+
+function DashboardSkeleton({ year, month }: { year: number; month: number }) {
+  const monthLabel = `${year}年 ${month}月`
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Month picker card skeleton */}
+      <div className="rounded-xl border bg-card px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded bg-muted animate-pulse" />
+          <span className="text-sm font-medium">{monthLabel}</span>
+          <div className="w-6 h-6 rounded bg-muted animate-pulse" />
+          <div className="w-10 h-5 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="text-right">
+          <div className="w-16 h-3 rounded bg-muted animate-pulse mb-1 ml-auto" />
+          <div className="w-24 h-6 rounded bg-muted animate-pulse" />
+        </div>
+      </div>
+
+      {/* Tab bar + content skeleton */}
+      <div className="flex flex-col gap-4">
+        <div className="flex rounded-lg border p-1 bg-muted gap-1">
+          <div className="flex-1 h-8 rounded-md bg-background animate-pulse" />
+          <div className="flex-1 h-8 rounded-md animate-pulse" />
+        </div>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -33,77 +67,65 @@ export default async function DashboardPage({
   const year = yearParam ? parseInt(yearParam) : now.getFullYear()
   const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
 
-  // Ensure the shared public ledger exists using the authenticated supabase client
-  const { count: publicCount } = await supabase
-    .from('ledgers')
-    .select('id', { count: 'exact', head: true })
-    .eq('is_public', true)
-
-  if (!publicCount) {
-    await supabase
-      .from('ledgers')
-      .insert({ name: '作伙帳本', owner_id: user.id, is_public: true })
-  }
-
+  // Fetch ledgers, profile, and categories in parallel
   const [ledgers, profile, categories] = await Promise.all([
     getLedgers(),
     getProfile(),
     getCategories(),
   ])
 
-  // Resolve current ledger: URL param → accessible ledger, else public ledger
   const publicLedger = ledgers.find((l) => l.is_public)
   const currentLedger = ledgerParam
     ? (ledgers.find((l) => l.id === ledgerParam) ?? publicLedger)
     : publicLedger
-
-  const transactions = await getTransactions(year, month, currentLedger?.id)
 
   const nickname = profile?.nickname ?? user.email ?? ''
   const isAdmin = profile?.is_admin ?? false
 
   return (
     <LiveActionsProvider>
-    <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
-      {/* Header */}
-      <header className="flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Image
-            src="/tsohue.jpg"
-            alt="做伙"
-            width={48}
-            height={48}
-            className="object-contain"
-            priority
-          />
-          <span className="text-2xl font-bold">做伙</span>
-        </Link>
-        <div className="flex items-center gap-1">
-          <LedgerManager
-            ledgers={ledgers}
-            currentLedgerId={currentLedger?.id ?? ''}
-            currentUserId={user.id}
-          />
-          <CategoryManager initialCategories={categories} />
-          <ProfileDialog email={user.email ?? ''} nickname={nickname} />
-          <form action={logout}>
-            <Button variant="ghost" size="sm" type="submit">登出</Button>
-          </form>
-        </div>
-      </header>
+      <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
+        {/* Header renders immediately */}
+        <header className="flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Image
+              src="/tsohue.jpg"
+              alt="做伙"
+              width={48}
+              height={48}
+              className="object-contain"
+              priority
+            />
+            <span className="text-2xl font-bold">做伙</span>
+          </Link>
+          <div className="flex items-center gap-1">
+            <LedgerManager
+              ledgers={ledgers}
+              currentLedgerId={currentLedger?.id ?? ''}
+              currentUserId={user.id}
+            />
+            <CategoryManager initialCategories={categories} />
+            <ProfileDialog email={user.email ?? ''} nickname={nickname} />
+            <form action={logout}>
+              <Button variant="ghost" size="sm" type="submit">登出</Button>
+            </form>
+          </div>
+        </header>
 
-      <MonthController
-        initialYear={year}
-        initialMonth={month}
-        initialTransactions={transactions}
-        categories={categories}
-        currentUserId={user.id}
-        userNickname={nickname}
-        ledgerId={currentLedger?.id}
-        defaultCurrency={currentLedger?.default_currency}
-        isAdmin={isAdmin}
-      />
-    </div>
+        {/* Transactions stream in behind skeleton */}
+        <Suspense fallback={<DashboardSkeleton year={year} month={month} />}>
+          <TransactionSection
+            year={year}
+            month={month}
+            ledgerId={currentLedger?.id}
+            defaultCurrency={currentLedger?.default_currency}
+            currentUserId={user.id}
+            userNickname={nickname}
+            isAdmin={isAdmin}
+            categories={categories}
+          />
+        </Suspense>
+      </div>
     </LiveActionsProvider>
   )
 }
