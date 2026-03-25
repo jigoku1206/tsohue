@@ -118,6 +118,11 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes splash-progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
