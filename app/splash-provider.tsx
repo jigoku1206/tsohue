@@ -4,10 +4,12 @@ import { useEffect, useRef } from 'react'
 
 export function SplashProvider({ children }: { children: React.ReactNode }) {
   const splashRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = splashRef.current
-    if (!el) return
+    const content = contentRef.current
+    if (!el || !content) return
 
     const fadeTimer = setTimeout(() => {
       el.style.transition = 'opacity 0.5s ease-out'
@@ -16,7 +18,8 @@ export function SplashProvider({ children }: { children: React.ReactNode }) {
 
     const hideTimer = setTimeout(() => {
       el.style.display = 'none'
-    }, 2100)
+      content.style.visibility = 'visible'
+    }, 2000)
 
     return () => {
       clearTimeout(fadeTimer)
@@ -36,7 +39,6 @@ export function SplashProvider({ children }: { children: React.ReactNode }) {
           bottom: 0,
           left: 0,
           zIndex: 9999,
-          pointerEvents: 'none',
           backgroundColor: '#ffffff',
         }}
       >
@@ -47,7 +49,9 @@ export function SplashProvider({ children }: { children: React.ReactNode }) {
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       </div>
-      {children}
+      <div ref={contentRef} style={{ visibility: 'hidden' }}>
+        {children}
+      </div>
     </>
   )
 }
