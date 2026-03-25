@@ -1,44 +1,52 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Image from 'next/image'
+import { useEffect, useRef } from 'react'
 
 export function SplashProvider({ children }: { children: React.ReactNode }) {
-  const [showSplash, setShowSplash] = useState(true)
-  const [opacity, setOpacity] = useState(1)
+  const splashRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const fadeOut = setTimeout(() => setOpacity(0), 1200)
-    const done = setTimeout(() => setShowSplash(false), 1900)
+    const el = splashRef.current
+    if (!el) return
+
+    const fadeTimer = setTimeout(() => {
+      el.style.transition = 'opacity 0.5s ease-out'
+      el.style.opacity = '0'
+    }, 1500)
+
+    const hideTimer = setTimeout(() => {
+      el.style.display = 'none'
+    }, 2100)
+
     return () => {
-      clearTimeout(fadeOut)
-      clearTimeout(done)
+      clearTimeout(fadeTimer)
+      clearTimeout(hideTimer)
     }
   }, [])
 
   return (
     <>
-      {showSplash && (
-        <div
-          style={{
-            opacity,
-            transition: 'opacity 0.7s ease-in-out',
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '1rem',
-            backgroundColor: '#ffffff',
-            pointerEvents: 'none',
-          }}
-        >
-          <Image src="/tsohue.jpg" alt="做伙" width={200} height={200} style={{ objectFit: 'contain' }} priority />
-          <span style={{ fontSize: '1.875rem', fontWeight: 700 }}>做伙 Tsohue</span>
-        </div>
-      )}
+      <div
+        ref={splashRef}
+        suppressHydrationWarning
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          backgroundColor: '#ffffff',
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/splash/apple-splash-1290-2796.png"
+          alt="做伙"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      </div>
       {children}
     </>
   )
