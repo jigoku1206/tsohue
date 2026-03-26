@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://tsohue-demo.vercel.app/dashboard">🌐 線上 Demo</a>
+  <a href="https://tsohue-demo.vercel.app/dashboard" target="_blank" rel="noopener noreferrer">🌐 線上 Demo</a>
 </p>
 
 ---
