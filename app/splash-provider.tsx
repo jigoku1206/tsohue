@@ -4,143 +4,67 @@ import { useEffect, useRef } from 'react'
 
 export function SplashProvider({ children }: { children: React.ReactNode }) {
   const splashRef = useRef<HTMLDivElement>(null)
-  const progressContainerRef = useRef<HTMLDivElement>(null)
-  const progressFillRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = splashRef.current
-    const progressContainer = progressContainerRef.current
-    const progressFill = progressFillRef.current
     const content = contentRef.current
-    if (!el || !progressContainer || !progressFill || !content) return
+    if (!el || !content) return
 
     // 只在 PWA standalone 模式下顯示 splash（一般瀏覽器分頁直接跳過）
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     if (!isStandalone) return
     if (window.location.pathname === '/welcome') return
 
-    // 進入 standalone 模式：顯示 splash、隱藏內容
+    // 顯示 splash、隱藏內容
     el.style.display = 'block'
-    progressContainer.style.display = 'flex'
     content.style.visibility = 'hidden'
     content.style.height = '0'
     content.style.overflow = 'hidden'
 
-    // screen.height 回傳完整螢幕 CSS 像素（含 home indicator 區域）
-    // innerHeight 在 iOS PWA 通常不含 home indicator 安全區
-    const safeAreaBottom = Math.max(window.screen.height - window.innerHeight, 0)
+    // 防止 iOS bounce scroll 讓 splash 被拖動
+    const preventTouch = (e: TouchEvent) => e.preventDefault()
+    document.addEventListener('touchmove', preventTouch, { passive: false })
 
-    // Splash 填滿完整螢幕
-    el.style.height = `${window.screen.height}px`
-    el.style.bottom = '0px'
-
-    // 進度條容器：固定在底部，用 translateY 推入實際安全區域
-    const barHeight = Math.max(safeAreaBottom, 34)
-    progressContainer.style.height = `${barHeight}px`
-    progressContainer.style.transform = `translateY(${safeAreaBottom}px)`
-    // rAF 動畫（Safari 相容，不依賴 CSS keyframes）
-    const startTime = performance.now()
-    const duration = 1500
-    let animFrame: number
-
-    function animate(now: number) {
-      const progress = Math.min((now - startTime) / duration, 1)
-      if (progressFillRef.current) {
-        progressFillRef.current.style.width = `${progress * 100}%`
-      }
-      if (progress < 1) {
-        animFrame = requestAnimationFrame(animate)
-      }
-    }
-    animFrame = requestAnimationFrame(animate)
-
-    // 1.5s 後同時淡出 splash + 進度條
+    // 1.5s 後淡出 splash
     const fadeTimer = setTimeout(() => {
-      const t = 'opacity 0.5s ease-out'
-      el.style.transition = t
+      el.style.transition = 'opacity 0.5s ease-out'
       el.style.opacity = '0'
-      progressContainer.style.transition = t
-      progressContainer.style.opacity = '0'
     }, 1500)
 
     const hideTimer = setTimeout(() => {
       el.style.display = 'none'
-      progressContainer.style.display = 'none'
       content.style.height = ''
       content.style.overflow = ''
       content.style.visibility = 'visible'
+      document.removeEventListener('touchmove', preventTouch)
     }, 2000)
 
     return () => {
-      cancelAnimationFrame(animFrame)
       clearTimeout(fadeTimer)
       clearTimeout(hideTimer)
+      document.removeEventListener('touchmove', preventTouch)
     }
   }, [])
 
   return (
     <>
-      {/* Splash 圖片層 */}
+      {/* Splash 圖片層：定位與 env() 透過 CSS class 處理，inline style 只控制 display */}
       <div
         ref={splashRef}
         suppressHydrationWarning
-        style={{
-          display: 'none',
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          zIndex: 9999,
-          backgroundColor: '#ffffff',
-        }}
+        className="splash-screen"
+        style={{ display: 'none' }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/splash/apple-splash-1290-2796.png"
+          src="/splash/apple-splash-1170-2532.png"
           alt="做伙"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       </div>
 
-      {/* 進度條層（獨立 fixed div，高於 splash） */}
-      <div
-        ref={progressContainerRef}
-        suppressHydrationWarning
-        style={{
-          display: 'none',
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10000,
-          backgroundColor: '#ffffff',
-          alignItems: 'center',
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            height: 3,
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            ref={progressFillRef}
-            style={{
-              height: '100%',
-              width: '0%',
-              backgroundColor: '#1e7a8a',
-            }}
-          />
-        </div>
-      </div>
-
-      <div
-        ref={contentRef}
-      >
+      <div ref={contentRef} className="flex flex-col flex-1">
         {children}
       </div>
     </>

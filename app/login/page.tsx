@@ -22,8 +22,20 @@ export default function LoginPage() {
   const [state, action, isPending] = useActionState(login, null)
 
   useEffect(() => {
+    // 先滑到定位位置，再鎖定頁面不可滑動
+    window.scrollTo(0, 48)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const preventTouch = (e: TouchEvent) => e.preventDefault()
+    document.addEventListener('touchmove', preventTouch, { passive: false })
+
     if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
       router.replace('/dashboard')
+    }
+
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('touchmove', preventTouch)
     }
   }, [router])
 

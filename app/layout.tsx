@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   description: '輕鬆記錄、共同分攤的家庭帳本',
   appleWebApp: {
     capable: true,
-    title: '做伙',
     statusBarStyle: 'black-translucent',
+    title: '做伙',
     startupImage: [
       // iPhone SE (1st gen) / iPod Touch — 640×1136
       { url: '/splash/apple-splash-640-1136.png', media: 'screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
@@ -66,7 +66,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: '#ffffff',
   viewportFit: 'cover',
+  initialScale: 1,
 }
+
+// apple-mobile-web-app-status-bar-style must stay 'black-translucent'
+// so that the webview extends under the status bar (paired with viewport-fit=cover).
+// Without it, iOS renders an opaque white status bar on top of the full-bleed
+// webview, and the body's padding-top:env(safe-area-inset-top) doubles the gap.
 
 export default function RootLayout({
   children,
@@ -74,8 +80,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="zh-TW" className={`${geistSans.variable} h-full antialiased`} style={{ backgroundColor: '#ffffff' }}>
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#ffffff' }}>
+    <html lang="zh-TW" className={`${geistSans.variable} h-full antialiased`} style={{ backgroundColor: '#ffffffff' }}>
+      <body className="min-h-dvh flex flex-col" style={{ backgroundColor: '#ffffff' }}>
         <SplashProvider>
           {children}
         </SplashProvider>

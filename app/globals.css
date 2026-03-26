@@ -118,23 +118,33 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@keyframes splash-progress {
-  from { width: 0%; }
-  to   { width: 100%; }
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  width: 100%;
+  z-index: 9999;
+  background-color: #ffffff;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
-    padding-top: env(safe-area-inset-top);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
+    min-height: calc(100% + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
+
   html {
     @apply font-sans;
+    min-height: calc(100% + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 }
