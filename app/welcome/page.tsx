@@ -1,45 +1,26 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
-export function SplashProvider({ children }: { children: React.ReactNode }) {
-  const splashRef = useRef<HTMLDivElement>(null)
+export default function WelcomePage() {
+  const containerRef = useRef<HTMLDivElement>(null)
   const progressContainerRef = useRef<HTMLDivElement>(null)
   const progressFillRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    const el = splashRef.current
+    const container = containerRef.current
     const progressContainer = progressContainerRef.current
     const progressFill = progressFillRef.current
-    const content = contentRef.current
-    if (!el || !progressContainer || !progressFill || !content) return
+    if (!container || !progressContainer || !progressFill) return
 
-    // 只在 PWA standalone 模式下顯示 splash（一般瀏覽器分頁直接跳過）
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    if (!isStandalone) return
-    if (window.location.pathname === '/welcome') return
-
-    // 進入 standalone 模式：顯示 splash、隱藏內容
-    el.style.display = 'block'
-    progressContainer.style.display = 'flex'
-    content.style.visibility = 'hidden'
-    content.style.height = '0'
-    content.style.overflow = 'hidden'
-
-    // screen.height 回傳完整螢幕 CSS 像素（含 home indicator 區域）
-    // innerHeight 在 iOS PWA 通常不含 home indicator 安全區
     const safeAreaBottom = Math.max(window.screen.height - window.innerHeight, 0)
-
-    // Splash 填滿完整螢幕
-    el.style.height = `${window.screen.height}px`
-    el.style.bottom = '0px'
-
-    // 進度條容器：固定在底部，用 translateY 推入實際安全區域
+    container.style.height = `${window.screen.height}px`
     const barHeight = Math.max(safeAreaBottom, 34)
     progressContainer.style.height = `${barHeight}px`
     progressContainer.style.transform = `translateY(${safeAreaBottom}px)`
-    // rAF 動畫（Safari 相容，不依賴 CSS keyframes）
+
     const startTime = performance.now()
     const duration = 1500
     let animFrame: number
@@ -55,38 +36,38 @@ export function SplashProvider({ children }: { children: React.ReactNode }) {
     }
     animFrame = requestAnimationFrame(animate)
 
-    // 1.5s 後同時淡出 splash + 進度條
     const fadeTimer = setTimeout(() => {
       const t = 'opacity 0.5s ease-out'
-      el.style.transition = t
-      el.style.opacity = '0'
+      container.style.transition = t
+      container.style.opacity = '0'
       progressContainer.style.transition = t
       progressContainer.style.opacity = '0'
     }, 1500)
 
-    const hideTimer = setTimeout(() => {
-      el.style.display = 'none'
-      progressContainer.style.display = 'none'
-      content.style.height = ''
-      content.style.overflow = ''
-      content.style.visibility = 'visible'
+    const redirectTimer = setTimeout(async () => {
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        router.replace('/dashboard')
+        return
+      }
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      router.replace(user ? '/dashboard' : '/login')
     }, 2000)
 
     return () => {
       cancelAnimationFrame(animFrame)
       clearTimeout(fadeTimer)
-      clearTimeout(hideTimer)
+      clearTimeout(redirectTimer)
     }
-  }, [])
+  }, [router])
 
   return (
     <>
-      {/* Splash 圖片層 */}
       <div
-        ref={splashRef}
+        ref={containerRef}
         suppressHydrationWarning
         style={{
-          display: 'none',
           position: 'fixed',
           top: 0,
           right: 0,
@@ -104,18 +85,17 @@ export function SplashProvider({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      {/* 進度條層（獨立 fixed div，高於 splash） */}
       <div
         ref={progressContainerRef}
         suppressHydrationWarning
         style={{
-          display: 'none',
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
           zIndex: 10000,
           backgroundColor: '#ffffff',
+          display: 'flex',
           alignItems: 'center',
         }}
       >
@@ -136,12 +116,6 @@ export function SplashProvider({ children }: { children: React.ReactNode }) {
             }}
           />
         </div>
-      </div>
-
-      <div
-        ref={contentRef}
-      >
-        {children}
       </div>
     </>
   )
