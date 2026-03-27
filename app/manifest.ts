@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: '做伙 Tsohue',
-    short_name: '做伙',
+    short_name: '做伙Tsohue',
     description: '輕鬆記錄、共同分攤的家庭帳本',
     start_url: '/welcome',
     display: 'standalone',
