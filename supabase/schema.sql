@@ -196,3 +196,26 @@ create policy "users_can_update_own" on public.transactions
 
 create policy "users_can_delete_own" on public.transactions
   for delete using (auth.uid() = user_id or public.is_admin());
+
+-- ─── App settings ─────────────────────────────────────────────────────────────
+-- Must come after is_admin() is defined above.
+
+create table if not exists public.app_settings (
+  key   text primary key,
+  value jsonb not null
+);
+
+alter table public.app_settings enable row level security;
+
+drop policy if exists "anyone_can_read_settings" on public.app_settings;
+create policy "anyone_can_read_settings" on public.app_settings
+  for select using (true);
+
+drop policy if exists "admins_can_modify_settings" on public.app_settings;
+create policy "admins_can_modify_settings" on public.app_settings
+  for all using (public.is_admin())
+  with check (public.is_admin());
+
+insert into public.app_settings (key, value)
+values ('registration_enabled', 'true'::jsonb)
+on conflict (key) do nothing;

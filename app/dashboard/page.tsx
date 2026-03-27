@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/app/actions/profile'
 import { getLedgers } from '@/app/actions/ledgers'
 import { getCategories } from '@/app/actions/categories'
+import { getRegistrationEnabled } from '@/app/actions/settings'
 import { CategoryManager } from '@/components/category-manager'
 import { ProfileDialog } from '@/components/profile-dialog'
 import { LedgerManager } from '@/components/ledger-manager'
@@ -67,11 +68,12 @@ export default async function DashboardPage({
   const year = yearParam ? parseInt(yearParam) : now.getFullYear()
   const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
 
-  // Fetch ledgers, profile, and categories in parallel
-  const [ledgers, profile, categories] = await Promise.all([
+  // Fetch ledgers, profile, categories, and settings in parallel
+  const [ledgers, profile, categories, registrationEnabled] = await Promise.all([
     getLedgers(),
     getProfile(),
     getCategories(),
+    getRegistrationEnabled(),
   ])
 
   const publicLedger = ledgers.find((l) => l.is_public)
@@ -105,7 +107,12 @@ export default async function DashboardPage({
               currentUserId={user.id}
             />
             <CategoryManager initialCategories={categories} />
-            <ProfileDialog email={user.email ?? ''} nickname={nickname} />
+            <ProfileDialog
+              email={user.email ?? ''}
+              nickname={nickname}
+              isAdmin={isAdmin}
+              registrationEnabled={registrationEnabled}
+            />
             <form action={logout}>
               <Button variant="ghost" size="sm" type="submit">登出</Button>
             </form>
