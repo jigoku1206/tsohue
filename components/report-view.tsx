@@ -197,7 +197,7 @@ export function ReportView({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="h-full overflow-y-scroll overscroll-contain flex flex-col gap-4" style={{ WebkitOverflowScrolling: 'touch' }}>
       {/* Pie chart */}
       <div className="rounded-xl border bg-card p-4">
         <p className="text-xs text-muted-foreground mb-3 text-center">

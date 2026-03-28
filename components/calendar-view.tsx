@@ -69,9 +69,9 @@ export function CalendarView({
   const selectedLabel = `${year}年${month}月${selectedDay}日`
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex-1 min-h-0 flex flex-col gap-4">
       {/* ── Calendar grid ── */}
-      <div className="rounded-xl border bg-card p-4">
+      <div className="shrink-0 rounded-xl border bg-card p-4">
         {/* Weekday headers */}
         <div className="grid grid-cols-7 mb-1">
           {WEEKDAYS.map((d) => (
@@ -121,27 +121,29 @@ export function CalendarView({
         </div>
       </div>
 
-      {/* ── Selected day transactions ── */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="font-semibold">{selectedLabel}</h2>
-            {selectedTransactions.length > 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {selectedTransactions.length} 筆・{formatNTD(selectedTotal)}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground">無消費記錄</p>
-            )}
-          </div>
-          <AddTransactionDialog
-            userNickname={userNickname}
-            categories={categories}
-            defaultDate={`${year}-${String(month).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`}
-            ledgerId={ledgerId}
-            defaultCurrency={defaultCurrency}
-          />
+      {/* ── Selected day header (fixed) ── */}
+      <div className="shrink-0 flex items-center justify-between">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="font-semibold">{selectedLabel}</h2>
+          {selectedTransactions.length > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {selectedTransactions.length} 筆・{formatNTD(selectedTotal)}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">無消費記錄</p>
+          )}
         </div>
+        <AddTransactionDialog
+          userNickname={userNickname}
+          categories={categories}
+          defaultDate={`${year}-${String(month).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`}
+          ledgerId={ledgerId}
+          defaultCurrency={defaultCurrency}
+        />
+      </div>
+
+      {/* ── Transaction list (scrollable) ── */}
+      <div className="flex-1 min-h-0 overflow-y-scroll overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
         <TransactionList
           transactions={selectedTransactions}
           categories={categories}

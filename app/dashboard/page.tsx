@@ -86,9 +86,11 @@ export default async function DashboardPage({
 
   return (
     <LiveActionsProvider>
-      <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
+      {/* fixed inset-0 bypasses body min-height/scroll caused by safe-area padding */}
+      <div className="fixed inset-0 overflow-hidden">
+      <div className="max-w-2xl mx-auto h-full flex flex-col">
         {/* Header renders immediately */}
-        <header className="flex items-center justify-between">
+        <header className="shrink-0 flex items-center justify-between px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image
               src="/tsohue.jpg"
@@ -120,6 +122,7 @@ export default async function DashboardPage({
         </header>
 
         {/* Transactions stream in behind skeleton */}
+        <div className="flex-1 min-h-0 flex flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <Suspense fallback={<DashboardSkeleton year={year} month={month} />}>
           <TransactionSection
             year={year}
@@ -132,6 +135,8 @@ export default async function DashboardPage({
             categories={categories}
           />
         </Suspense>
+        </div>
+      </div>
       </div>
     </LiveActionsProvider>
   )

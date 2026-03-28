@@ -64,8 +64,8 @@ export function MonthController({
   )
 
   return (
-    <>
-      <div className={`rounded-xl border bg-card px-4 py-3 flex items-center justify-between transition-opacity${isPending ? ' opacity-50' : ''}`}>
+    <div className="flex-1 min-h-0 flex flex-col gap-3">
+      <div className={`shrink-0 rounded-xl border bg-card px-4 py-3 flex items-center justify-between transition-opacity${isPending ? ' opacity-50' : ''}`}>
         <MonthPicker
           year={year}
           month={month}
@@ -95,6 +95,6 @@ export function MonthController({
         defaultCurrency={defaultCurrency}
         isAdmin={isAdmin}
       />
-    </>
+    </div>
   )
 }

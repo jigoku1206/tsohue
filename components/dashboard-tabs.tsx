@@ -33,9 +33,9 @@ export function DashboardTabs({
   const [tab, setTab] = useState<Tab>('calendar')
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex-1 min-h-0 flex flex-col gap-3">
       {/* Tab bar */}
-      <div className="flex rounded-lg border p-1 bg-muted gap-1">
+      <div className="shrink-0 flex rounded-lg border p-1 bg-muted gap-1">
         {([
           { key: 'calendar', label: '日曆', Icon: CalendarDays },
           { key: 'report',   label: '報表', Icon: BarChart2 },
@@ -56,27 +56,29 @@ export function DashboardTabs({
         ))}
       </div>
 
-      {tab === 'calendar' ? (
-        <CalendarView
-          year={year}
-          month={month}
-          transactions={transactions}
-          categories={categories}
-          currentUserId={currentUserId}
-          userNickname={userNickname}
-          ledgerId={ledgerId}
-          defaultCurrency={defaultCurrency}
-          isAdmin={isAdmin}
-        />
-      ) : (
-        <ReportView
-          year={year}
-          month={month}
-          transactions={transactions}
-          categories={categories}
-          ledgerId={ledgerId}
-        />
-      )}
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        {tab === 'calendar' ? (
+          <CalendarView
+            year={year}
+            month={month}
+            transactions={transactions}
+            categories={categories}
+            currentUserId={currentUserId}
+            userNickname={userNickname}
+            ledgerId={ledgerId}
+            defaultCurrency={defaultCurrency}
+            isAdmin={isAdmin}
+          />
+        ) : (
+          <ReportView
+            year={year}
+            month={month}
+            transactions={transactions}
+            categories={categories}
+            ledgerId={ledgerId}
+          />
+        )}
+      </div>
     </div>
   )
 }
