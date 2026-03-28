@@ -127,7 +127,7 @@ export function AddTransactionDialog({
       <Button onClick={() => setOpen(true)}>+ 新增記錄</Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="overflow-hidden">
           <DialogHeader>
             <DialogTitle>新增消費記錄</DialogTitle>
           </DialogHeader>
@@ -141,6 +141,7 @@ export function AddTransactionDialog({
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 required
+                className="w-fit"
               />
             </div>
 
