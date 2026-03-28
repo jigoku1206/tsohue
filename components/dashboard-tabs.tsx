@@ -31,6 +31,16 @@ export function DashboardTabs({
   isAdmin?: boolean
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
+  const [calendarOpen, setCalendarOpen] = useState(true)
+
+  function handleTabClick(key: Tab) {
+    if (key === 'calendar' && tab === 'calendar') {
+      setCalendarOpen((v) => !v)
+    } else {
+      setTab(key)
+      if (key === 'calendar') setCalendarOpen(true)
+    }
+  }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-3">
@@ -42,7 +52,7 @@ export function DashboardTabs({
         ] as const).map(({ key, label, Icon }) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => handleTabClick(key)}
             className={[
               'flex-1 flex items-center justify-center gap-1.5 text-sm py-1.5 rounded-md transition-colors font-medium',
               tab === key
@@ -68,6 +78,8 @@ export function DashboardTabs({
             ledgerId={ledgerId}
             defaultCurrency={defaultCurrency}
             isAdmin={isAdmin}
+            calendarOpen={calendarOpen}
+            onToggleCalendar={setCalendarOpen}
           />
         ) : (
           <ReportView
