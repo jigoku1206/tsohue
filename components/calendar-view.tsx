@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import { TransactionList } from '@/components/transaction-list'
@@ -47,37 +47,41 @@ export function CalendarView({
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
   const [selectedDay, setSelectedDay] = useState(isCurrentMonth ? today.getDate() : 1)
 
+  const listRef = useRef<HTMLDivElement>(null)
   const lastScrollTop = useRef(0)
-  const atTop = useRef(true)
-  const touchStartY = useRef(0)
 
-  // Collapse on scroll down; track position so we know when user is at top
+  // Reset list scroll to top whenever the selected day changes
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = 0
+      lastScrollTop.current = 0
+    }
+  }, [selectedDay])
+
+  // Collapse calendar when scrolling down in the list.
+  // Expand logic is intentionally NOT on the scrollable list to avoid
+  // interfering with touch scroll gestures (causes iOS to redirect
+  // scroll events to the body).
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget
-    const st = el.scrollTop
+    const st = e.currentTarget.scrollTop
     if (st > lastScrollTop.current && st > 10) {
       onToggleCalendar(false)
     }
-    atTop.current = st === 0
     lastScrollTop.current = st
   }, [onToggleCalendar])
 
-  // Desktop: expand when wheel-up at top
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    if (atTop.current && e.deltaY < 0) {
+  // Expand via a dedicated non-scrollable drag handle shown when collapsed.
+  const dragStartY = useRef(0)
+  const handleDragTouchStart = useCallback((e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY
+  }, [])
+  const handleDragTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches[0].clientY - dragStartY.current > 20) {
       onToggleCalendar(true)
     }
   }, [onToggleCalendar])
-
-  // Mobile: expand when pull-down gesture at top
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    touchStartY.current = e.touches[0].clientY
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (atTop.current && e.touches[0].clientY - touchStartY.current > 30) {
-      onToggleCalendar(true)
-    }
+  const handleDragWheel = useCallback((e: React.WheelEvent) => {
+    if (e.deltaY < 0) onToggleCalendar(true)
   }, [onToggleCalendar])
 
   // Group transactions by day number
@@ -165,6 +169,19 @@ export function CalendarView({
         </div>
       </div>
 
+      {/* ── Drag handle: expand calendar when collapsed ── */}
+      {!calendarOpen && (
+        <button
+          className="shrink-0 -mt-2 flex items-center justify-center gap-1 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => onToggleCalendar(true)}
+          onTouchStart={handleDragTouchStart}
+          onTouchMove={handleDragTouchMove}
+          onWheel={handleDragWheel}
+        >
+          <ChevronUp className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       {/* ── Selected day header ── */}
       <div className="shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -204,12 +221,11 @@ export function CalendarView({
 
       {/* ── Transaction list (scrollable) ── */}
       <div
+        ref={listRef}
         className="flex-1 min-h-0 overflow-y-scroll overscroll-contain"
         style={{ WebkitOverflowScrolling: 'touch' }}
         onScroll={handleScroll}
-        onWheel={handleWheel}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <TransactionList
           transactions={selectedTransactions}

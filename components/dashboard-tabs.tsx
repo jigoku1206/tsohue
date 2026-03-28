@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CalendarDays, BarChart2 } from 'lucide-react'
 import { CalendarView } from '@/components/calendar-view'
 import { ReportView } from '@/components/report-view'
@@ -32,6 +32,15 @@ export function DashboardTabs({
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
   const [calendarOpen, setCalendarOpen] = useState(true)
+
+  // Prevent body from scrolling while the dashboard is mounted.
+  // body has min-height > viewport due to safe-area padding, making it
+  // natively scrollable — on iOS this steals scroll events from inner containers.
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   function handleTabClick(key: Tab) {
     if (key === 'calendar' && tab === 'calendar') {
