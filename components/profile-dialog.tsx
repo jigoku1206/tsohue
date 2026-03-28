@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { updateProfile } from '@/app/actions/profile'
+import { changePassword } from '@/app/actions/auth'
 import { setRegistrationEnabled } from '@/app/actions/settings'
 import { toast } from 'sonner'
 
@@ -29,8 +30,11 @@ export function ProfileDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [regEnabled, setRegEnabled] = useState(initialRegistrationEnabled)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [isPendingReg, startRegTransition] = useTransition()
   const router = useRouter()
+
+  const [passwordState, passwordAction, isPendingPassword] = useActionState(changePassword, null)
 
   async function handleAction(
     prevState: { error: string } | null,
@@ -103,6 +107,43 @@ export function ProfileDialog({
               </Button>
             </div>
           </form>
+
+          {/* ── Change password ── */}
+          <div className="border-t pt-4 flex flex-col gap-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">更改密碼</p>
+            {!showPasswordForm ? (
+              <Button type="button" variant="outline" onClick={() => setShowPasswordForm(true)}>
+                更改密碼
+              </Button>
+            ) : (
+              <form action={passwordAction} className="flex flex-col gap-3">
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                  ⚠ 更改密碼後將自動登出，所有裝置上的登入狀態也將失效，需以新密碼重新登入。
+                </div>
+                {passwordState?.error && (
+                  <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+                    {passwordState.error}
+                  </p>
+                )}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="password">新密碼</Label>
+                  <Input id="password" name="password" type="password" required minLength={6} placeholder="至少 6 個字元" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="confirm">確認新密碼</Label>
+                  <Input id="confirm" name="confirm" type="password" required minLength={6} placeholder="再輸入一次" />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" variant="destructive" disabled={isPendingPassword} className="flex-1">
+                    {isPendingPassword ? '更新中…' : '確認更改'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowPasswordForm(false)}>
+                    取消
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
 
           {isAdmin && (
             <div className="border-t pt-4 flex flex-col gap-3">

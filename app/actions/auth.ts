@@ -68,3 +68,24 @@ export async function logout() {
   revalidatePath('/', 'layout')
   redirect('/login')
 }
+
+export async function changePassword(
+  _prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const supabase = await createClient()
+  const password = formData.get('password') as string
+  const confirm = formData.get('confirm') as string
+
+  if (password !== confirm) return { error: '兩次輸入的密碼不一致' }
+  if (password.length < 6) return { error: '密碼至少需要 6 個字元' }
+
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) return { error: error.message }
+
+  // Revoke all refresh tokens across all devices
+  await supabase.auth.signOut({ scope: 'global' })
+
+  revalidatePath('/', 'layout')
+  redirect('/login')
+}
