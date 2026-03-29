@@ -30,6 +30,7 @@ export function CalendarView({
   isAdmin,
   calendarOpen,
   onToggleCalendar,
+  onJumpToToday,
 }: {
   year: number
   month: number
@@ -42,10 +43,18 @@ export function CalendarView({
   isAdmin?: boolean
   calendarOpen: boolean
   onToggleCalendar: Dispatch<SetStateAction<boolean>>
+  onJumpToToday?: () => void
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
   const [selectedDay, setSelectedDay] = useState(isCurrentMonth ? today.getDate() : 1)
+
+  // Reset selected day when navigating to a different month
+  useEffect(() => {
+    const now = new Date()
+    const nowIsCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
+    setSelectedDay(nowIsCurrentMonth ? now.getDate() : 1)
+  }, [year, month])
 
   const listRef = useRef<HTMLDivElement>(null)
   const lastScrollTop = useRef(0)
@@ -192,7 +201,16 @@ export function CalendarView({
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="flex flex-col gap-0.5">
+          <button
+            className="flex flex-col gap-0.5 text-left"
+            onClick={() => {
+              if (isCurrentMonth) {
+                setSelectedDay(today.getDate())
+              } else {
+                onJumpToToday?.()
+              }
+            }}
+          >
             <h2 className="font-semibold">{selectedLabel}</h2>
             {selectedTransactions.length > 0 ? (
               <p className="text-sm text-muted-foreground">
@@ -201,7 +219,7 @@ export function CalendarView({
             ) : (
               <p className="text-sm text-muted-foreground">無消費記錄</p>
             )}
-          </div>
+          </button>
           <button
             onClick={() => setSelectedDay((d) => Math.min(daysInMonth, d + 1))}
             disabled={selectedDay === daysInMonth}

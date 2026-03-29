@@ -94,6 +94,7 @@ export function MonthController({
         ledgerId={ledgerId}
         defaultCurrency={defaultCurrency}
         isAdmin={isAdmin}
+        onJumpToToday={handleNavigateToToday}
       />
     </div>
   )

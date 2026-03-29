@@ -69,6 +69,14 @@ export function DemoDashboard() {
     router.push(`/dashboard?ledger=${DEMO_PUBLIC_LEDGER_ID}`)
   }
 
+  function handleNavigateToToday() {
+    const n = new Date()
+    setYear(n.getFullYear())
+    setMonth(n.getMonth() + 1)
+    const ledgerQuery = currentLedger?.id ? `&ledger=${currentLedger.id}` : ''
+    window.history.replaceState(null, '', `/dashboard?year=${n.getFullYear()}&month=${n.getMonth() + 1}${ledgerQuery}`)
+  }
+
   return (
     <ActionsContext.Provider value={actions}>
       <div className="max-w-2xl mx-auto w-full p-4 flex flex-col gap-3">
@@ -126,13 +134,7 @@ export function DemoDashboard() {
               const ledgerQuery = currentLedger?.id ? `&ledger=${currentLedger.id}` : ''
               window.history.replaceState(null, '', `/dashboard?year=${y}&month=${m}${ledgerQuery}`)
             }}
-            onNavigateToToday={() => {
-              const n = new Date()
-              setYear(n.getFullYear())
-              setMonth(n.getMonth() + 1)
-              const ledgerQuery = currentLedger?.id ? `&ledger=${currentLedger.id}` : ''
-              window.history.replaceState(null, '', `/dashboard?year=${n.getFullYear()}&month=${n.getMonth() + 1}${ledgerQuery}`)
-            }}
+            onNavigateToToday={handleNavigateToToday}
           />
           <div className="text-right">
             <p className="text-xs text-muted-foreground">當月總支出</p>
@@ -157,6 +159,7 @@ export function DemoDashboard() {
           ledgerId={currentLedger?.id}
           defaultCurrency={currentLedger?.default_currency}
           isAdmin
+          onJumpToToday={handleNavigateToToday}
         />
       </div>
     </ActionsContext.Provider>

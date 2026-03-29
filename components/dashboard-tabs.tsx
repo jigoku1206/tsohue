@@ -19,6 +19,7 @@ export function DashboardTabs({
   ledgerId,
   defaultCurrency,
   isAdmin,
+  onJumpToToday,
 }: {
   year: number
   month: number
@@ -29,6 +30,7 @@ export function DashboardTabs({
   ledgerId?: string
   defaultCurrency?: string
   isAdmin?: boolean
+  onJumpToToday?: () => void
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
   const [calendarOpen, setCalendarOpen] = useState(true)
@@ -89,6 +91,7 @@ export function DashboardTabs({
             isAdmin={isAdmin}
             calendarOpen={calendarOpen}
             onToggleCalendar={setCalendarOpen}
+            onJumpToToday={onJumpToToday}
           />
         ) : (
           <ReportView
