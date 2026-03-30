@@ -20,6 +20,32 @@ export type Transaction = {
   created_at: string
 }
 
+export async function getTransactionsRange(
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number,
+  ledgerId?: string
+): Promise<Transaction[]> {
+  const supabase = await createClient()
+  const start = `${startYear}-${String(startMonth).padStart(2, '0')}-01`
+  const endLastDay = new Date(endYear, endMonth, 0).getDate()
+  const end = `${endYear}-${String(endMonth).padStart(2, '0')}-${String(endLastDay).padStart(2, '0')}`
+
+  let query = supabase
+    .from('transactions')
+    .select('*')
+    .gte('date', start)
+    .lte('date', end)
+    .order('date', { ascending: true })
+
+  if (ledgerId) query = query.eq('ledger_id', ledgerId)
+
+  const { data, error } = await query
+  if (error) return []
+  return data ?? []
+}
+
 export async function getTransactions(
   year: number,
   month: number,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -38,7 +38,10 @@ export function DemoDashboard() {
 
   const [state, setState] = useState<DemoState>(loadOrSeed)
 
-  const actions = useMemo(() => createDemoActions(setState), [])
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  const actions = useMemo(() => createDemoActions(setState, () => stateRef.current), [])
 
   // Lazy-generate recurring transactions whenever month/ledger changes
   useEffect(() => {

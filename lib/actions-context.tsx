@@ -33,8 +33,9 @@ export interface ActionsContextValue {
   updateProfile: (_prev: { error: string } | null, formData: FormData) => Promise<{ error: string } | null>
   // exchange rates
   fetchExchangeRates: (date?: string) => Promise<ExchangeRates>
-  // import
+  // import / export
   importTransactions: (rows: ImportRow[], ledgerId?: string) => Promise<{ imported: number; error?: string }>
+  getTransactionsRange: (startYear: number, startMonth: number, endYear: number, endMonth: number, ledgerId?: string) => Promise<import('@/app/actions/transactions').Transaction[]>
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  getTransactionsRange,
 } from '@/app/actions/transactions'
 import {
   createRecurringRule,
@@ -98,6 +100,7 @@ const liveValue: ActionsContextValue = {
   updateProfile,
   fetchExchangeRates,
   importTransactions,
+  getTransactionsRange,
 }
 
 export function LiveActionsProvider({ children }: { children: React.ReactNode }) {

@@ -13,6 +13,7 @@ import {
 } from '@/lib/recurring-utils'
 
 type SetState = (updater: (prev: DemoState) => DemoState) => void
+type GetState = () => DemoState
 
 let _uid = 1
 function uid() {
@@ -75,7 +76,7 @@ export function demoEnsureRecurringForMonth(
 
 // ── Demo actions factory ──────────────────────────────────────────────────────
 
-export function createDemoActions(setState: SetState): ActionsContextValue {
+export function createDemoActions(setState: SetState, getState: GetState): ActionsContextValue {
   function mutate(fn: (prev: DemoState) => DemoState) {
     setState((prev) => {
       const next = fn(prev)
@@ -430,7 +431,21 @@ export function createDemoActions(setState: SetState): ActionsContextValue {
 
     fetchExchangeRates,
 
-    // ── Import ────────────────────────────────────────────────────────────────
+    // ── Import / Export ───────────────────────────────────────────────────────
+
+    async getTransactionsRange(startYear, startMonth, endYear, endMonth, ledgerId) {
+      const start = `${startYear}-${String(startMonth).padStart(2, '0')}-01`
+      const endLastDay = new Date(endYear, endMonth, 0).getDate()
+      const end = `${endYear}-${String(endMonth).padStart(2, '0')}-${String(endLastDay).padStart(2, '0')}`
+      const state = getState()
+      return state.transactions
+        .filter((tx) => {
+          if (tx.date < start || tx.date > end) return false
+          if (ledgerId && tx.ledger_id !== ledgerId) return false
+          return true
+        })
+        .sort((a, b) => a.date.localeCompare(b.date))
+    },
 
     async importTransactions(rows: ImportRow[], ledgerId?: string) {
       const newTxs = rows.map((row) => ({

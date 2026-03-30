@@ -8,6 +8,13 @@ import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import { useActions } from '@/lib/actions-context'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 const COLORS = [
@@ -76,6 +83,38 @@ function parseCSV(text: string): string[][] {
     })
 }
 
+// ── MonthSelect ───────────────────────────────────────────────
+
+function MonthSelect({
+  year, month, onChange,
+}: {
+  year: number
+  month: number
+  onChange: (year: number, month: number) => void
+}) {
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: currentYear - 2019 }, (_, i) => 2020 + i)
+  const months = Array.from({ length: 12 }, (_, i) => i + 1)
+  return (
+    <div className="flex gap-2">
+      <select
+        className="flex-1 rounded-md border bg-background px-2 py-1.5 text-sm"
+        value={year}
+        onChange={(e) => onChange(parseInt(e.target.value), month)}
+      >
+        {years.map((y) => <option key={y} value={y}>{y} 年</option>)}
+      </select>
+      <select
+        className="w-24 rounded-md border bg-background px-2 py-1.5 text-sm"
+        value={month}
+        onChange={(e) => onChange(year, parseInt(e.target.value))}
+      >
+        {months.map((m) => <option key={m} value={m}>{m} 月</option>)}
+      </select>
+    </div>
+  )
+}
+
 // ── Custom Tooltip ────────────────────────────────────────────
 
 function CustomTooltip({ active, payload, total }: { active?: boolean; payload?: { name: string; value: number }[]; total: number }) {
@@ -104,11 +143,17 @@ export function ReportView({
   categories: Category[]
   ledgerId?: string
 }) {
-  const { importTransactions } = useActions()
+  const { importTransactions, getTransactionsRange } = useActions()
   const router = useRouter()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Export range dialog state
+  const [exportOpen, setExportOpen] = useState(false)
+  const [rangeStart, setRangeStart] = useState({ year, month })
+  const [rangeEnd, setRangeEnd] = useState({ year, month })
 
   // Build category totals (NTD converted)
   const catData = useMemo(() => {
@@ -131,9 +176,34 @@ export function ReportView({
   }, [catData])
 
   // ── Export ──
-  function handleExport() {
-    const csv = toCSV(transactions)
-    downloadCSV(csv, `做伙_${year}-${String(month).padStart(2, '0')}.csv`)
+  function openExportDialog() {
+    setRangeStart({ year, month })
+    setRangeEnd({ year, month })
+    setExportOpen(true)
+  }
+
+  async function handleExportConfirm() {
+    const sy = rangeStart.year, sm = rangeStart.month
+    const ey = rangeEnd.year, em = rangeEnd.month
+    // Validate range
+    if (sy * 12 + sm > ey * 12 + em) {
+      toast.error('起始月份不能晚於結束月份')
+      return
+    }
+    setExporting(true)
+    try {
+      const rows = await getTransactionsRange(sy, sm, ey, em, ledgerId)
+      if (rows.length === 0) { toast.error('該區間無消費記錄'); return }
+      const csv = toCSV(rows)
+      const sLabel = `${sy}-${String(sm).padStart(2, '0')}`
+      const eLabel = `${ey}-${String(em).padStart(2, '0')}`
+      const filename = sLabel === eLabel ? `做伙_${sLabel}.csv` : `做伙_${sLabel}_${eLabel}.csv`
+      downloadCSV(csv, filename)
+      setExportOpen(false)
+      toast.success(`已匯出 ${rows.length} 筆消費記錄`)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // ── Import ──
@@ -179,14 +249,53 @@ export function ReportView({
     }
   }
 
+  // ── Export range dialog ──
+  const exportDialog = (
+    <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>匯出範圍</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-muted-foreground">起始月份</label>
+            <MonthSelect
+              year={rangeStart.year}
+              month={rangeStart.month}
+              onChange={(y, m) => setRangeStart({ year: y, month: m })}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-muted-foreground">結束月份</label>
+            <MonthSelect
+              year={rangeEnd.year}
+              month={rangeEnd.month}
+              onChange={(y, m) => setRangeEnd({ year: y, month: m })}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setExportOpen(false)}>取消</Button>
+          <Button onClick={handleExportConfirm} disabled={exporting}>
+            {exporting ? '匯出中…' : '匯出 CSV'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+
   // ── Empty state ──
   if (transactions.length === 0) {
     return (
       <div className="flex flex-col gap-4">
+        {exportDialog}
         <div className="rounded-xl border bg-card px-4 py-10 flex flex-col items-center gap-2 text-center">
           <p className="text-muted-foreground">本月無消費記錄</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={openExportDialog}>
+            <Download className="h-4 w-4" />匯出 CSV
+          </Button>
           <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => fileRef.current?.click()} disabled={importing}>
             <Upload className="h-4 w-4" />{importing ? '匯入中…' : '匯入 CSV'}
           </Button>
@@ -198,6 +307,7 @@ export function ReportView({
 
   return (
     <div className="h-full overflow-y-scroll overscroll-contain flex flex-col gap-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {exportDialog}
       {/* Pie chart */}
       <div className="rounded-xl border bg-card p-4">
         <p className="text-xs text-muted-foreground mb-3 text-center">
@@ -282,7 +392,7 @@ export function ReportView({
 
       {/* Export / Import */}
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={handleExport}>
+        <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={openExportDialog}>
           <Download className="h-4 w-4" />匯出 CSV
         </Button>
         <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={() => fileRef.current?.click()} disabled={importing}>
