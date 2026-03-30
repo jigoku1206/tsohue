@@ -87,12 +87,7 @@ export async function ensureRecurringForMonth(
   }
 
   if (toInsert.length > 0) {
-    await supabase
-      .from('transactions')
-      .upsert(toInsert as Parameters<ReturnType<typeof supabase.from>['upsert']>[0], {
-        onConflict: 'recurring_id,date',
-        ignoreDuplicates: true,
-      })
+    await supabase.from('transactions').insert(toInsert)
   }
 }
 
