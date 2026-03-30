@@ -16,6 +16,7 @@ import { MonthPicker } from '@/components/month-picker'
 import { LedgerManager } from '@/components/ledger-manager'
 import { DemoBanner } from '@/components/demo-banner'
 import { DemoProfileDialog } from '@/components/demo-profile-dialog'
+import { AlertTriangle } from 'lucide-react'
 
 function loadOrSeed(): DemoState {
   return loadState() ?? buildSeedState()
@@ -71,6 +72,17 @@ export function DemoDashboard() {
     (sum, tx) => sum + tx.amount * (tx.exchange_rate ?? 1),
     0
   )
+
+  const totalBudget = state.ledger_budgets.find(
+    (b) => b.ledger_id === currentLedger?.id && b.category === null
+  )?.monthly_limit ?? null
+
+  const totalWarning = !totalBudget ? null
+    : monthlyTotal / totalBudget >= 1 ? 'over' as const
+    : monthlyTotal / totalBudget >= 0.8 ? 'near' as const
+    : null
+
+  const [showBudget, setShowBudget] = useState(false)
 
   function handleReset() {
     const fresh = buildSeedState()
@@ -147,16 +159,28 @@ export function DemoDashboard() {
             }}
             onNavigateToToday={handleNavigateToToday}
           />
-          <div className="text-right">
+          <button
+            className="text-right select-none"
+            onClick={() => totalBudget && setShowBudget((v) => !v)}
+            style={{ cursor: totalBudget ? 'pointer' : 'default' }}
+          >
             <p className="text-xs text-muted-foreground">當月總支出</p>
-            <p className="text-xl font-bold">
+            <p className="text-xl font-bold flex items-center justify-end gap-1">
               {new Intl.NumberFormat('zh-TW', {
                 style: 'currency',
                 currency: 'TWD',
                 minimumFractionDigits: 0,
               }).format(monthlyTotal)}
+              {totalWarning && (
+                <AlertTriangle className={`h-4 w-4 shrink-0 ${totalWarning === 'over' ? 'text-red-500' : 'text-yellow-500'}`} />
+              )}
             </p>
-          </div>
+            {showBudget && totalBudget && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                預算上限 {new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(totalBudget)}
+              </p>
+            )}
+          </button>
         </div>
 
         {/* Calendar / Report tabs */}
