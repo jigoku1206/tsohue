@@ -13,6 +13,10 @@ export interface ActionsContextValue {
   addTransaction: (formData: FormData) => Promise<{ error?: string | null }>
   updateTransaction: (id: string, formData: FormData) => Promise<{ error?: string | null }>
   deleteTransaction: (id: string) => Promise<{ error?: string | null }>
+  // recurring
+  createRecurringRule: (formData: FormData) => Promise<{ error?: string | null }>
+  updateRecurringByScope: (ruleId: string, fromDate: string, scope: 'all' | 'from_date', formData: FormData) => Promise<{ error?: string | null }>
+  deleteRecurringByScope: (ruleId: string, fromDate: string, scope: 'all' | 'from_date') => Promise<{ error?: string | null }>
   // categories
   createCategory: (name: string, parentId?: string) => Promise<{ error?: string | null }>
   updateCategory: (id: string, name: string) => Promise<{ error?: string | null }>
@@ -51,6 +55,11 @@ import {
   deleteTransaction,
 } from '@/app/actions/transactions'
 import {
+  createRecurringRule,
+  updateRecurringByScope,
+  deleteRecurringByScope,
+} from '@/app/actions/recurring'
+import {
   createCategory,
   updateCategory,
   deleteCategory,
@@ -73,6 +82,9 @@ const liveValue: ActionsContextValue = {
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  createRecurringRule,
+  updateRecurringByScope,
+  deleteRecurringByScope,
   createCategory,
   updateCategory,
   deleteCategory,

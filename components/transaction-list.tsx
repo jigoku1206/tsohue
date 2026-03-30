@@ -44,14 +44,16 @@ export function TransactionList({
   currentUserId: string
   isAdmin?: boolean
 }) {
-  const { deleteTransaction } = useActions()
+  const { deleteTransaction, deleteRecurringByScope } = useActions()
   const [detail, setDetail] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [recurringScope, setRecurringScope] = useState<'all' | 'from_date' | null>(null)
+  const [scopePending, setScopePending] = useState<'edit' | 'delete' | null>(null)
 
-  async function handleDelete() {
+  async function handleDeleteSingle() {
     if (!detail) return
-    if (!confirm(`確定要刪除這筆記錄？`)) return
+    if (!confirm('確定要刪除這筆記錄？')) return
     setDeleting(true)
     const result = await deleteTransaction(detail.id)
     setDeleting(false)
@@ -60,6 +62,46 @@ export function TransactionList({
     } else {
       toast.success('已刪除')
       setDetail(null)
+    }
+  }
+
+  function handleEditClick() {
+    if (!detail) return
+    if (detail.recurring_id) {
+      setScopePending('edit')
+    } else {
+      setEditing(true)
+    }
+  }
+
+  function handleDeleteClick() {
+    if (!detail) return
+    if (detail.recurring_id) {
+      setScopePending('delete')
+    } else {
+      handleDeleteSingle()
+    }
+  }
+
+  async function handleScopeChosen(scope: 'all' | 'from_date') {
+    if (!detail || !scopePending) return
+    setScopePending(null)
+
+    if (scopePending === 'edit') {
+      setRecurringScope(scope)
+      setEditing(true)
+    } else {
+      const label = scope === 'all' ? '全部週期' : '此筆及之後'
+      if (!confirm(`確定要刪除${label}的記錄？`)) return
+      setDeleting(true)
+      const result = await deleteRecurringByScope(detail.recurring_id!, detail.date, scope)
+      setDeleting(false)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('已刪除')
+        setDetail(null)
+      }
     }
   }
 
@@ -95,6 +137,9 @@ export function TransactionList({
                     <span className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground">
                       {tx.subcategory}
                     </span>
+                  )}
+                  {tx.recurring_id && (
+                    <span className="text-xs text-muted-foreground" title="週期消費">↻</span>
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground truncate">
@@ -143,6 +188,11 @@ export function TransactionList({
                 <DetailRow label="幣別／匯率" value={`${detail.currency}（1:${(detail.exchange_rate ?? 1).toFixed(4)}）`} />
               )}
               {detail.note && <DetailRow label="備註" value={detail.note} />}
+              {detail.recurring_id && (
+                <DetailRow label="類型" value={
+                  <span className="text-xs text-muted-foreground">↻ 週期消費</span>
+                } />
+              )}
             </div>
 
             {isOwner && (
@@ -150,20 +200,44 @@ export function TransactionList({
                 <Button
                   variant="outline"
                   className="flex-1 gap-1.5"
-                  onClick={() => setEditing(true)}
+                  onClick={handleEditClick}
                 >
                   <Pencil className="h-4 w-4" />編輯
                 </Button>
                 <Button
                   variant="destructive"
                   className="flex-1 gap-1.5"
-                  onClick={handleDelete}
+                  onClick={handleDeleteClick}
                   disabled={deleting}
                 >
                   <Trash2 className="h-4 w-4" />{deleting ? '刪除中…' : '刪除'}
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Recurring scope choice dialog */}
+      {scopePending && detail && (
+        <Dialog open={!!scopePending} onOpenChange={(open) => { if (!open) setScopePending(null) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                此為週期消費，要{scopePending === 'edit' ? '修改' : '刪除'}哪些？
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 mt-2">
+              <Button onClick={() => handleScopeChosen('all')}>
+                全部週期
+              </Button>
+              <Button variant="outline" onClick={() => handleScopeChosen('from_date')}>
+                此筆及之後
+              </Button>
+              <Button variant="ghost" onClick={() => setScopePending(null)}>
+                取消
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -177,8 +251,12 @@ export function TransactionList({
             if (!open) {
               setEditing(false)
               setDetail(null)
+              setRecurringScope(null)
             }
           }}
+          recurringRuleId={detail.recurring_id ?? undefined}
+          recurringFromDate={detail.recurring_id ? detail.date : undefined}
+          recurringScope={recurringScope ?? undefined}
         />
       )}
     </>

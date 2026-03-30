@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ActionsContext } from '@/lib/actions-context'
-import { createDemoActions } from '@/lib/demo/actions'
+import { createDemoActions, demoEnsureRecurringForMonth } from '@/lib/demo/actions'
 import { buildSeedState, DEMO_PUBLIC_LEDGER_ID, DEMO_USER_ID } from '@/lib/demo/seed'
 import { loadState, saveState } from '@/lib/demo/storage'
 import type { DemoState } from '@/lib/demo/storage'
@@ -39,6 +39,14 @@ export function DemoDashboard() {
   const [state, setState] = useState<DemoState>(loadOrSeed)
 
   const actions = useMemo(() => createDemoActions(setState), [])
+
+  // Lazy-generate recurring transactions whenever month/ledger changes
+  useEffect(() => {
+    setState((prev) => {
+      const ledgerId = currentLedgerId ?? (prev.ledgers.find((l) => l.is_public)?.id ?? null)
+      return demoEnsureRecurringForMonth(prev, year, month, ledgerId)
+    })
+  }, [year, month, currentLedgerId])
 
   // Resolve current ledger
   const publicLedger = state.ledgers.find((l) => l.is_public)

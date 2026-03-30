@@ -1,6 +1,7 @@
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import type { Ledger } from '@/app/actions/ledgers'
+import type { RecurringRule } from '@/app/actions/recurring'
 
 export type DemoProfile = {
   nickname: string
@@ -11,6 +12,7 @@ export type DemoState = {
   categories: Category[]
   ledgers: Ledger[]
   profile: DemoProfile
+  recurring_rules: RecurringRule[]
 }
 
 const KEY = 'demo_state_v1'
@@ -20,7 +22,9 @@ export function loadState(): DemoState | null {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return null
-    return JSON.parse(raw) as DemoState
+    const parsed = JSON.parse(raw)
+    // Backfill recurring_rules for existing localStorage without this field
+    return { recurring_rules: [], ...parsed } as DemoState
   } catch {
     return null
   }

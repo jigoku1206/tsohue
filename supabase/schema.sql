@@ -21,8 +21,50 @@ alter table public.transactions add column if not exists subcategory text;
 alter table public.transactions alter column amount type numeric(12,2);
 alter table public.transactions add column if not exists currency text not null default 'TWD';
 alter table public.transactions add column if not exists exchange_rate numeric(12,4) not null default 1;
+alter table public.transactions add column if not exists recurring_id uuid;
 
 alter table public.transactions enable row level security;
+
+-- ─── Recurring rules ──────────────────────────────────────────────────────────
+
+create table if not exists public.recurring_rules (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users(id) on delete cascade,
+  ledger_id     uuid references public.ledgers(id) on delete set null,
+  amount        numeric(12, 2) not null check (amount >= 0),
+  currency      text not null default 'TWD',
+  exchange_rate numeric(12, 4) not null default 1,
+  category      text not null,
+  subcategory   text,
+  note          text,
+  paid_by       text not null,
+  frequency     text not null check (frequency in ('monthly', 'weekly')),
+  start_date    date not null,
+  end_date      date,
+  created_at    timestamptz not null default now()
+);
+
+alter table public.recurring_rules enable row level security;
+
+drop policy if exists "recurring_rules_all" on public.recurring_rules;
+create policy "recurring_rules_all" on public.recurring_rules
+  for all using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Clear orphaned recurring_id values (no matching rule row), then add FK
+update public.transactions set recurring_id = null where recurring_id is not null;
+
+alter table public.transactions
+  drop constraint if exists transactions_recurring_id_fkey;
+
+alter table public.transactions
+  add constraint transactions_recurring_id_fkey
+  foreign key (recurring_id) references public.recurring_rules(id) on delete set null;
+
+-- Prevent duplicate generation (e.g. from concurrent navigation)
+create unique index if not exists transactions_recurring_date_unique
+  on public.transactions(recurring_id, date)
+  where recurring_id is not null;
 
 -- ─── Categories ──────────────────────────────────────────────────────────────
 

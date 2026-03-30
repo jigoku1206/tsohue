@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { ensureRecurringForMonth } from '@/app/actions/recurring'
 
 export type Transaction = {
   id: string
@@ -15,6 +16,7 @@ export type Transaction = {
   paid_by: string
   user_id: string
   ledger_id: string | null
+  recurring_id: string | null
   created_at: string
 }
 
@@ -24,6 +26,13 @@ export async function getTransactions(
   ledgerId?: string
 ): Promise<Transaction[]> {
   const supabase = await createClient()
+
+  // Lazy-generate recurring transactions for this month before fetching
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    await ensureRecurringForMonth(supabase, user.id, year, month, ledgerId)
+  }
+
   const start = `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay = new Date(year, month, 0).getDate()
   const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`

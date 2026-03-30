@@ -31,13 +31,19 @@ export function EditTransactionDialog({
   categories,
   open,
   onOpenChange,
+  recurringRuleId,
+  recurringFromDate,
+  recurringScope,
 }: {
   transaction: Transaction
   categories: Category[]
   open: boolean
   onOpenChange: (open: boolean) => void
+  recurringRuleId?: string
+  recurringFromDate?: string
+  recurringScope?: 'all' | 'from_date'
 }) {
-  const { updateTransaction, fetchExchangeRates } = useActions()
+  const { updateTransaction, updateRecurringByScope, fetchExchangeRates } = useActions()
   const [loading, setLoading] = useState(false)
   const [amount, setAmount] = useState(String(transaction.amount))
   const [categoryName, setCategoryName] = useState(transaction.category)
@@ -89,7 +95,12 @@ export function EditTransactionDialog({
     formData.set('currency', currency)
     formData.set('exchange_rate', String(currentRate ?? 1))
 
-    const result = await updateTransaction(transaction.id, formData)
+    let result: { error?: string | null }
+    if (recurringRuleId && recurringFromDate && recurringScope) {
+      result = await updateRecurringByScope(recurringRuleId, recurringFromDate, recurringScope, formData)
+    } else {
+      result = await updateTransaction(transaction.id, formData)
+    }
     setLoading(false)
 
     if (result?.error) {
@@ -104,7 +115,14 @@ export function EditTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>編輯消費記錄</DialogTitle>
+          <DialogTitle>
+            編輯消費記錄
+            {recurringScope && (
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                （{recurringScope === 'all' ? '全部週期' : '此筆及之後'}）
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
           <div className="flex flex-col gap-1.5">

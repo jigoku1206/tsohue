@@ -64,7 +64,6 @@ export function MonthPicker({
         variant="ghost"
         size="sm"
         onClick={() => navigate(1)}
-        disabled={isCurrentMonth}
         className="h-8 w-8 p-0"
       >
         <ChevronRightIcon className="size-4" />

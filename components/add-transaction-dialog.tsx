@@ -38,7 +38,7 @@ export function AddTransactionDialog({
   ledgerId?: string
   defaultCurrency?: string
 }) {
-  const { addTransaction, fetchExchangeRates } = useActions()
+  const { addTransaction, createRecurringRule, fetchExchangeRates } = useActions()
 
   const resolveCurrency = (c?: string): CurrencyCode =>
     (CURRENCIES.find((x) => x.code === c)?.code ?? 'TWD') as CurrencyCode
@@ -49,6 +49,9 @@ export function AddTransactionDialog({
   const [categoryName, setCategoryName] = useState('')
   const [subcategoryName, setSubcategoryName] = useState('')
   const [currency, setCurrency] = useState<CurrencyCode>(resolveCurrency(defaultCurrency))
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringFrequency, setRecurringFrequency] = useState<'monthly' | 'weekly'>('monthly')
+  const [recurringCount, setRecurringCount] = useState('3')
 
   // Sync currency when ledger changes (only while dialog is closed)
   useEffect(() => {
@@ -92,6 +95,9 @@ export function AddTransactionDialog({
     setAmount('0')
     setCategoryName('')
     setSubcategoryName('')
+    setIsRecurring(false)
+    setRecurringFrequency('monthly')
+    setRecurringCount('3')
     // currency will be reset by the useEffect above when open becomes false
     setRates({})
   }
@@ -109,16 +115,28 @@ export function AddTransactionDialog({
     formData.set('currency', currency)
     formData.set('exchange_rate', String(currentRate ?? 1))
     if (ledgerId) formData.set('ledger_id', ledgerId)
-
     formData.set('amount', amount)
-    const result = await addTransaction(formData)
-    setLoading(false)
 
-    if (result?.error) {
-      toast.error(result.error)
+    if (isRecurring) {
+      formData.set('recurring_frequency', recurringFrequency)
+      formData.set('recurring_count', recurringCount)
+      const result = await createRecurringRule(formData)
+      setLoading(false)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('週期記帳已建立')
+        handleClose()
+      }
     } else {
-      toast.success('記帳成功')
-      handleClose()
+      const result = await addTransaction(formData)
+      setLoading(false)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('記帳成功')
+        handleClose()
+      }
     }
   }
 
@@ -133,7 +151,7 @@ export function AddTransactionDialog({
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="date">日期</Label>
+              <Label htmlFor="date">{isRecurring ? '首期日期' : '日期'}</Label>
               <Input
                 id="date"
                 name="date"
@@ -143,6 +161,49 @@ export function AddTransactionDialog({
                 required
                 className="w-fit"
               />
+            </div>
+
+            {/* Recurring toggle */}
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 cursor-pointer w-fit">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-foreground"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                />
+                <span className="text-sm font-medium leading-none">週期消費</span>
+              </label>
+              {isRecurring && (
+                <div className="grid grid-cols-2 gap-2 pl-6">
+                  <div className="flex flex-col gap-1.5">
+                    <Label>週期</Label>
+                    <Select value={recurringFrequency} onValueChange={(v) => { if (v) setRecurringFrequency(v as 'monthly' | 'weekly') }}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">每月</SelectItem>
+                        <SelectItem value="weekly">每週</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>期數</Label>
+                    <Select value={recurringCount} onValueChange={(v) => { if (v) setRecurringCount(v) }}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="3">3 期</SelectItem>
+                        <SelectItem value="6">6 期</SelectItem>
+                        <SelectItem value="12">12 期</SelectItem>
+                        <SelectItem value="indefinite">無限期</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Calculator */}

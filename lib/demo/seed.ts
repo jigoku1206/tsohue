@@ -91,7 +91,7 @@ function buildTransactions() {
     { id: uid(), date: thisMonth(safeDay(14)), amount: 9800, currency: 'TWD', exchange_rate: 1, category: '交通',     subcategory: '飛機',    paid_by: '阿明', note: '來回機票', user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
     { id: uid(), date: thisMonth(safeDay(15)), amount: 480,  currency: 'TWD', exchange_rate: 1, category: '娛樂',     subcategory: '展覽',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
     { id: uid(), date: thisMonth(safeDay(16)), amount: 4200, currency: 'TWD', exchange_rate: 1, category: '居家',     subcategory: null,      paid_by: '阿明', note: '住宿',     user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
-  ]
+  ].map((tx) => ({ ...tx, recurring_id: null }))
 }
 
 // ── Seed builder ──────────────────────────────────────────────────────────────
@@ -100,6 +100,7 @@ export function buildSeedState(): DemoState {
   return {
     transactions: buildTransactions(),
     categories: buildCategories(),
+    recurring_rules: [],
     ledgers: [
       {
         id: DEMO_PUBLIC_LEDGER_ID,
