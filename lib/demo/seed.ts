@@ -4,20 +4,6 @@ export const DEMO_USER_ID = 'demo-user'
 export const DEMO_PUBLIC_LEDGER_ID = 'demo-public-ledger'
 export const DEMO_TRAVEL_LEDGER_ID = 'demo-travel-ledger'
 
-// ── Helper ───────────────────────────────────────────────────────────────────
-
-let _uid = 1
-function uid() {
-  return `demo-${Date.now()}-${_uid++}`
-}
-
-function thisMonth(day: number): string {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  return `${y}-${m}-${String(day).padStart(2, '0')}`
-}
-
 // ── Seed categories (mirrors DEFAULT_CATEGORIES in app/actions/categories.ts) ─
 
 const CAT_DEFS: { name: string; subs: string[] }[] = [
@@ -58,40 +44,7 @@ function buildCategories() {
 // ── Seed transactions ─────────────────────────────────────────────────────────
 
 function buildTransactions() {
-  const now = new Date()
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const safeDay = (d: number) => Math.min(d, lastDay)
-
-  const pub = DEMO_PUBLIC_LEDGER_ID
-  const trv = DEMO_TRAVEL_LEDGER_ID
-
-  return [
-    // Public ledger — 作伙帳本
-    { id: uid(), date: thisMonth(safeDay(3)),  amount: 85,   currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: '早餐',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(4)),  amount: 320,  currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: '外送',    paid_by: '阿明', note: '晚餐外送',  user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(5)),  amount: 120,  currency: 'TWD', exchange_rate: 1, category: '交通',     subcategory: '捷運',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(6)),  amount: 850,  currency: 'TWD', exchange_rate: 1, category: '購物',     subcategory: '超市／食材', paid_by: '阿明', note: '週末採買', user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(8)),  amount: 540,  currency: 'TWD', exchange_rate: 1, category: '娛樂',     subcategory: '電影',    paid_by: '小美', note: '兩人',     user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(10)), amount: 1250, currency: 'TWD', exchange_rate: 1, category: '居家',     subcategory: '電費',    paid_by: '阿明', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(12)), amount: 1680, currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: '聚餐',    paid_by: '小美', note: '朋友聚餐', user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(13)), amount: 380,  currency: 'TWD', exchange_rate: 1, category: '醫療健康', subcategory: '藥品',    paid_by: '阿明', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(15)), amount: 250,  currency: 'TWD', exchange_rate: 1, category: '交通',     subcategory: 'Uber',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(16)), amount: 460,  currency: 'TWD', exchange_rate: 1, category: '購物',     subcategory: '日用品',  paid_by: '阿明', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(18)), amount: 180,  currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: '午餐',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(19)), amount: 149,  currency: 'TWD', exchange_rate: 1, category: '娛樂',     subcategory: '訂閱服務', paid_by: '阿明', note: 'Netflix', user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(20)), amount: 840,  currency: 'TWD', exchange_rate: 1, category: '交通',     subcategory: '高鐵',    paid_by: '小美', note: '回家',     user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(21)), amount: 130,  currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: '飲料',    paid_by: '阿明', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(22)), amount: 2390, currency: 'TWD', exchange_rate: 1, category: '購物',     subcategory: '衣物',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(23)), amount: 499,  currency: 'TWD', exchange_rate: 1, category: '居家',     subcategory: '網路',    paid_by: '阿明', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(24)), amount: 280,  currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: '晚餐',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    // JPY transaction
-    { id: uid(), date: thisMonth(safeDay(25)), amount: 18500, currency: 'JPY', exchange_rate: 0.2198, category: '娛樂', subcategory: '旅遊', paid_by: '阿明', note: '東京景點', user_id: DEMO_USER_ID, ledger_id: pub, created_at: '' },
-    // Travel ledger — 旅遊帳本
-    { id: uid(), date: thisMonth(safeDay(14)), amount: 680,  currency: 'TWD', exchange_rate: 1, category: '餐飲',     subcategory: null,      paid_by: '小美', note: '旅途中',   user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(14)), amount: 9800, currency: 'TWD', exchange_rate: 1, category: '交通',     subcategory: '飛機',    paid_by: '阿明', note: '來回機票', user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(15)), amount: 480,  currency: 'TWD', exchange_rate: 1, category: '娛樂',     subcategory: '展覽',    paid_by: '小美', note: null,       user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
-    { id: uid(), date: thisMonth(safeDay(16)), amount: 4200, currency: 'TWD', exchange_rate: 1, category: '居家',     subcategory: null,      paid_by: '阿明', note: '住宿',     user_id: DEMO_USER_ID, ledger_id: trv, created_at: '' },
-  ].map((tx) => ({ ...tx, recurring_id: null }))
+  return []
 }
 
 // ── Seed builder ──────────────────────────────────────────────────────────────
