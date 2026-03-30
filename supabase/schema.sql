@@ -261,3 +261,31 @@ create policy "admins_can_modify_settings" on public.app_settings
 insert into public.app_settings (key, value)
 values ('registration_enabled', 'true'::jsonb)
 on conflict (key) do nothing;
+
+-- ─── Ledger budgets ───────────────────────────────────────────────────────────
+
+create table if not exists public.ledger_budgets (
+  id            uuid primary key default gen_random_uuid(),
+  ledger_id     uuid not null references public.ledgers(id) on delete cascade,
+  category      text,   -- NULL = 每月總預算；有值 = 分類預算
+  monthly_limit numeric(12, 2) not null check (monthly_limit > 0),
+  created_at    timestamptz not null default now(),
+  unique nulls not distinct (ledger_id, category)
+);
+
+alter table public.ledger_budgets enable row level security;
+
+drop policy if exists "ledger_budgets_select" on public.ledger_budgets;
+create policy "ledger_budgets_select" on public.ledger_budgets
+  for select using (
+    ledger_id in (
+      select id from public.ledgers
+      where is_public or owner_id = auth.uid()
+         or id in (select ledger_id from public.ledger_members where user_id = auth.uid())
+    )
+  );
+
+drop policy if exists "ledger_budgets_write" on public.ledger_budgets;
+create policy "ledger_budgets_write" on public.ledger_budgets
+  for all using (ledger_id in (select id from public.ledgers where owner_id = auth.uid()))
+  with check (ledger_id in (select id from public.ledgers where owner_id = auth.uid()));

@@ -73,5 +73,6 @@ export function buildSeedState(): DemoState {
       },
     ],
     profile: { nickname: '訪客' },
+    ledger_budgets: [],
   }
 }

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { ChevronDown, ChevronRight, Download, Upload } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronRight, Download, Upload } from 'lucide-react'
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
+import type { LedgerBudget } from '@/app/actions/budgets'
 import { useActions } from '@/lib/actions-context'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +16,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { BudgetSettingsDialog } from '@/components/budget-settings-dialog'
 import { toast } from 'sonner'
 
 const COLORS = [
@@ -29,7 +31,26 @@ function formatNTD(n: number) {
   }).format(n)
 }
 
-// ── CSV helpers ──────────────────────────────────────────────
+// ── Budget warning ────────────────────────────────────────────
+
+type WarningLevel = 'over' | 'near' | null
+
+function getBudgetWarning(spent: number, limit?: number): WarningLevel {
+  if (!limit || limit <= 0) return null
+  const r = spent / limit
+  return r >= 1 ? 'over' : r >= 0.8 ? 'near' : null
+}
+
+function WarningIcon({ level }: { level: WarningLevel }) {
+  if (!level) return null
+  return (
+    <AlertTriangle
+      className={`inline-block shrink-0 h-3.5 w-3.5 ${level === 'over' ? 'text-red-500' : 'text-yellow-500'}`}
+    />
+  )
+}
+
+// ── CSV helpers ───────────────────────────────────────────────
 
 function toCSV(transactions: Transaction[]): string {
   const headers = ['日期', '金額', '幣別', '匯率', '類別', '子類別', '付款人', '備註']
@@ -135,6 +156,7 @@ export function ReportView({
   year,
   month,
   transactions,
+  categories,
   ledgerId,
 }: {
   year: number
@@ -143,7 +165,7 @@ export function ReportView({
   categories: Category[]
   ledgerId?: string
 }) {
-  const { importTransactions, getTransactionsRange } = useActions()
+  const { importTransactions, getTransactionsRange, getLedgerBudgets } = useActions()
   const router = useRouter()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
@@ -154,6 +176,23 @@ export function ReportView({
   const [exportOpen, setExportOpen] = useState(false)
   const [rangeStart, setRangeStart] = useState({ year, month })
   const [rangeEnd, setRangeEnd] = useState({ year, month })
+
+  // Budget state
+  const [budgets, setBudgets] = useState<LedgerBudget[]>([])
+
+  useEffect(() => {
+    if (ledgerId) getLedgerBudgets(ledgerId).then(setBudgets)
+  }, [ledgerId, getLedgerBudgets])
+
+  function refreshBudgets() {
+    if (ledgerId) getLedgerBudgets(ledgerId).then(setBudgets)
+  }
+
+  const budgetMap = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const b of budgets) m[b.category ?? ''] = b.monthly_limit
+    return m
+  }, [budgets])
 
   // Build category totals (NTD converted)
   const catData = useMemo(() => {
@@ -185,7 +224,6 @@ export function ReportView({
   async function handleExportConfirm() {
     const sy = rangeStart.year, sm = rangeStart.month
     const ey = rangeEnd.year, em = rangeEnd.month
-    // Validate range
     if (sy * 12 + sm > ey * 12 + em) {
       toast.error('起始月份不能晚於結束月份')
       return
@@ -305,14 +343,27 @@ export function ReportView({
     )
   }
 
+  const totalWarning = getBudgetWarning(total, budgetMap[''])
+
   return (
     <div className="h-full overflow-y-scroll overscroll-contain flex flex-col gap-4" style={{ WebkitOverflowScrolling: 'touch' }}>
       {exportDialog}
       {/* Pie chart */}
       <div className="rounded-xl border bg-card p-4">
-        <p className="text-xs text-muted-foreground mb-3 text-center">
-          {year}年{month}月・共 {transactions.length} 筆・{formatNTD(total)}
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground text-center flex-1 flex items-center justify-center gap-1">
+            {year}年{month}月・共 {transactions.length} 筆・{formatNTD(total)}
+            <WarningIcon level={totalWarning} />
+          </p>
+          {ledgerId && (
+            <BudgetSettingsDialog
+              ledgerId={ledgerId}
+              budgets={budgets}
+              categories={categories}
+              onSaved={refreshBudgets}
+            />
+          )}
+        </div>
         <div className="relative" style={{ height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -345,6 +396,7 @@ export function ReportView({
         {catData.map((cat) => {
           const catTxs = transactions.filter((tx) => tx.category === cat.name)
           const isOpen = expanded === cat.name
+          const catWarning = getBudgetWarning(cat.value, budgetMap[cat.name])
           return (
             <div key={cat.name}>
               <button
@@ -355,6 +407,7 @@ export function ReportView({
                 <span className="flex-1 text-left font-medium">{cat.name}</span>
                 <span className="text-muted-foreground text-xs">{catTxs.length}筆</span>
                 <span className="font-semibold w-24 text-right">{formatNTD(cat.value)}</span>
+                <WarningIcon level={catWarning} />
                 <span className="text-muted-foreground text-xs w-10 text-right">
                   {total > 0 ? ((cat.value / total) * 100).toFixed(0) : 0}%
                 </span>

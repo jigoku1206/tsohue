@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react'
 import type { ExchangeRates } from '@/lib/currencies'
 import type { LedgerMember, UserProfile } from '@/app/actions/ledgers'
 import type { ImportRow } from '@/app/actions/import'
+import type { LedgerBudget } from '@/app/actions/budgets'
 
 // ── Context type ─────────────────────────────────────────────────────────────
 
@@ -36,6 +37,9 @@ export interface ActionsContextValue {
   // import / export
   importTransactions: (rows: ImportRow[], ledgerId?: string) => Promise<{ imported: number; error?: string }>
   getTransactionsRange: (startYear: number, startMonth: number, endYear: number, endMonth: number, ledgerId?: string) => Promise<import('@/app/actions/transactions').Transaction[]>
+  // budgets
+  getLedgerBudgets: (ledgerId: string) => Promise<LedgerBudget[]>
+  upsertLedgerBudget: (ledgerId: string, category: string | null, limit: number | null) => Promise<{ error?: string }>
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -78,6 +82,7 @@ import {
 import { updateProfile } from '@/app/actions/profile'
 import { fetchExchangeRates } from '@/lib/fetch-exchange-rates'
 import { importTransactions } from '@/app/actions/import'
+import { getLedgerBudgets, upsertLedgerBudget } from '@/app/actions/budgets'
 
 const liveValue: ActionsContextValue = {
   isDemo: false,
@@ -101,6 +106,8 @@ const liveValue: ActionsContextValue = {
   fetchExchangeRates,
   importTransactions,
   getTransactionsRange,
+  getLedgerBudgets,
+  upsertLedgerBudget,
 }
 
 export function LiveActionsProvider({ children }: { children: React.ReactNode }) {

@@ -469,5 +469,30 @@ export function createDemoActions(setState: SetState, getState: GetState): Actio
       }))
       return { imported: rows.length }
     },
+
+    // ── Budgets ───────────────────────────────────────────────────────────────
+
+    async getLedgerBudgets(ledgerId: string) {
+      return getState().ledger_budgets.filter((b) => b.ledger_id === ledgerId)
+    },
+
+    async upsertLedgerBudget(ledgerId: string, category: string | null, limit: number | null) {
+      mutate((prev) => {
+        const filtered = prev.ledger_budgets.filter(
+          (b) => !(b.ledger_id === ledgerId && b.category === category)
+        )
+        if (!limit || limit <= 0) {
+          return { ...prev, ledger_budgets: filtered }
+        }
+        return {
+          ...prev,
+          ledger_budgets: [
+            ...filtered,
+            { id: uid(), ledger_id: ledgerId, category, monthly_limit: limit },
+          ],
+        }
+      })
+      return {}
+    },
   }
 }
