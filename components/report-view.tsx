@@ -329,6 +329,14 @@ export function ReportView({
         {exportDialog}
         <div className="rounded-xl border bg-card px-4 py-10 flex flex-col items-center gap-2 text-center">
           <p className="text-muted-foreground">本月無消費記錄</p>
+          {ledgerId && (
+            <BudgetSettingsDialog
+              ledgerId={ledgerId}
+              budgets={budgets}
+              categories={categories}
+              onSaved={refreshBudgets}
+            />
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="flex-1 gap-1.5" onClick={openExportDialog}>
