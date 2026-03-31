@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ActionsContext } from '@/lib/actions-context'
 import { createDemoActions, demoEnsureRecurringForMonth } from '@/lib/demo/actions'
 import { buildSeedState, DEMO_PUBLIC_LEDGER_ID, DEMO_USER_ID } from '@/lib/demo/seed'
-import { loadState, saveState } from '@/lib/demo/storage'
-import type { DemoState } from '@/lib/demo/storage'
+import { loadState, saveState, type DemoState } from '@/lib/demo/storage'
 import { DashboardTabs } from '@/components/dashboard-tabs'
 import { CategoryManager } from '@/components/category-manager'
 import { MonthPicker } from '@/components/month-picker'
@@ -83,6 +82,10 @@ export function DemoDashboard() {
     : null
 
   const [showBudget, setShowBudget] = useState(false)
+
+  async function handleRefresh() {
+    setState(loadOrSeed())
+  }
 
   function handleReset() {
     const fresh = buildSeedState()
@@ -195,6 +198,7 @@ export function DemoDashboard() {
           defaultCurrency={currentLedger?.default_currency}
           isAdmin
           onJumpToToday={handleNavigateToToday}
+          onRefresh={handleRefresh}
         />
       </div>
     </ActionsContext.Provider>

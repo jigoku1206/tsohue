@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronUp, RefreshCw } from 'lucide-react'
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import { TransactionList } from '@/components/transaction-list'
@@ -31,6 +31,7 @@ export function CalendarView({
   calendarOpen,
   onToggleCalendar,
   onJumpToToday,
+  onRefresh,
 }: {
   year: number
   month: number
@@ -44,6 +45,7 @@ export function CalendarView({
   calendarOpen: boolean
   onToggleCalendar: Dispatch<SetStateAction<boolean>>
   onJumpToToday?: () => void
+  onRefresh?: () => Promise<void>
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
@@ -58,6 +60,60 @@ export function CalendarView({
 
   const listRef = useRef<HTMLDivElement>(null)
   const lastScrollTop = useRef(0)
+
+  // Pull-to-refresh state
+  const [pullY, setPullY] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const pullYRef = useRef(0)
+  const PULL_THRESHOLD = 56
+  const MAX_PULL = 72
+
+  useEffect(() => {
+    if (!onRefresh) return
+    const el = listRef.current
+    if (!el) return
+
+    let startY = 0
+    let startScrollTop = 0
+    let isPulling = false
+
+    function onTouchStart(e: TouchEvent) {
+      startY = e.touches[0].clientY
+      startScrollTop = el!.scrollTop
+      isPulling = false
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      const delta = e.touches[0].clientY - startY
+      if (startScrollTop > 0 || delta <= 0) return
+      isPulling = true
+      const clamped = Math.min(delta * 0.45, MAX_PULL)
+      pullYRef.current = clamped
+      setPullY(clamped)
+      e.preventDefault()
+    }
+
+    function onTouchEnd() {
+      if (!isPulling) return
+      isPulling = false
+      const captured = pullYRef.current
+      pullYRef.current = 0
+      setPullY(0)
+      if (captured >= PULL_THRESHOLD) {
+        setIsRefreshing(true)
+        onRefresh!().finally(() => setIsRefreshing(false))
+      }
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [onRefresh])
 
   // Reset list scroll to top whenever the selected day changes
   useEffect(() => {
@@ -121,7 +177,22 @@ export function CalendarView({
   const selectedLabel = `${year}年${month}月${selectedDay}日`
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-4">
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* ── Pull-to-refresh indicator (above all content) ── */}
+      <div
+        className="shrink-0 flex justify-center items-center overflow-hidden"
+        style={{
+          height: isRefreshing ? 40 : pullY,
+          transition: pullY === 0 ? 'height 0.2s ease' : undefined,
+        }}
+      >
+        <RefreshCw
+          className={`h-5 w-5 text-muted-foreground ${isRefreshing ? 'animate-spin' : ''}`}
+          style={!isRefreshing ? { transform: `rotate(${pullY * 4}deg)` } : undefined}
+        />
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col gap-4">
       {/* ── Calendar grid (collapsible) ── */}
       <div
         className="shrink-0 rounded-xl border bg-card overflow-hidden transition-all duration-300"
@@ -251,6 +322,7 @@ export function CalendarView({
           currentUserId={currentUserId}
           isAdmin={isAdmin}
         />
+      </div>
       </div>
     </div>
   )

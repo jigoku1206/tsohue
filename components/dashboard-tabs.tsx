@@ -20,6 +20,7 @@ export function DashboardTabs({
   defaultCurrency,
   isAdmin,
   onJumpToToday,
+  onRefresh,
 }: {
   year: number
   month: number
@@ -31,6 +32,7 @@ export function DashboardTabs({
   defaultCurrency?: string
   isAdmin?: boolean
   onJumpToToday?: () => void
+  onRefresh?: () => Promise<void>
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
   const [calendarOpen, setCalendarOpen] = useState(true)
@@ -92,6 +94,7 @@ export function DashboardTabs({
             calendarOpen={calendarOpen}
             onToggleCalendar={setCalendarOpen}
             onJumpToToday={onJumpToToday}
+            onRefresh={onRefresh}
           />
         ) : (
           <ReportView

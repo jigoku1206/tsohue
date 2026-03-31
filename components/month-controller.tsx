@@ -71,6 +71,11 @@ export function MonthController({
     navigateTo(now.getFullYear(), now.getMonth() + 1)
   }
 
+  async function handleRefresh() {
+    const newTransactions = await getTransactions(year, month, ledgerId)
+    setTransactions(newTransactions)
+  }
+
   const monthlyTotal = transactions.reduce(
     (sum, tx) => sum + tx.amount * (tx.exchange_rate ?? 1),
     0
@@ -127,6 +132,7 @@ export function MonthController({
         defaultCurrency={defaultCurrency}
         isAdmin={isAdmin}
         onJumpToToday={handleNavigateToToday}
+        onRefresh={handleRefresh}
       />
     </div>
   )
