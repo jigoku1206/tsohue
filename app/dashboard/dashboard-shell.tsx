@@ -11,6 +11,7 @@ import { ProfileDialog } from '@/components/profile-dialog'
 import { MonthController } from '@/components/month-controller'
 import { Button } from '@/components/ui/button'
 import type { Ledger } from '@/app/actions/ledgers'
+import { LogOut } from 'lucide-react'
 
 export function DashboardShell({
   initialYear,
@@ -76,19 +77,19 @@ export function DashboardShell({
   return (
     <div className="fixed inset-0 overflow-hidden">
       <div className="max-w-2xl mx-auto h-full flex flex-col">
-        <header className="shrink-0 flex items-center justify-between px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
-          <Link href="/dashboard" className="flex items-center gap-2">
+        <header className="shrink-0 flex items-center justify-between gap-2 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4 sm:pb-3 sm:pt-[max(1rem,env(safe-area-inset-top))]">
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
             <Image
               src="/tsohue.jpg"
               alt="做伙"
               width={48}
               height={48}
-              className="object-contain"
+              className="h-auto w-9 object-contain sm:w-12"
               priority
             />
-            <span className="text-2xl font-bold">做伙</span>
+            <span className="text-xl font-bold sm:text-2xl">做伙</span>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 items-center gap-0.5 sm:gap-1">
             <LedgerManager
               ledgers={ledgers}
               currentLedgerId={currentLedger?.id ?? ''}
@@ -107,7 +108,10 @@ export function DashboardShell({
               registrationEnabled={registrationEnabled}
             />
             <form action={logout}>
-              <Button variant="ghost" size="sm" type="submit">登出</Button>
+              <Button variant="ghost" size="icon" type="submit" aria-label="登出" title="登出" className="h-9 w-9 sm:h-8 sm:w-auto sm:px-3">
+                <LogOut className="h-4 w-4 sm:mr-1.5" />
+                <span className="hidden sm:inline">登出</span>
+              </Button>
             </form>
           </div>
         </header>

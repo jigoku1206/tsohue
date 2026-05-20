@@ -74,11 +74,11 @@ export function ProfileDialog({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-3 sm:max-h-[85vh] sm:p-4">
           <DialogHeader>
             <DialogTitle>個人資料</DialogTitle>
           </DialogHeader>
-          <form action={action} className="flex flex-col gap-4 mt-2">
+          <form action={action} className="flex flex-col gap-3 mt-2 sm:gap-4">
             {state?.error && (
               <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
                 {state.error}
@@ -109,7 +109,7 @@ export function ProfileDialog({
           </form>
 
           {/* ── Change password ── */}
-          <div className="border-t pt-4 flex flex-col gap-3">
+          <div className="border-t pt-3 flex flex-col gap-3 sm:pt-4">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">更改密碼</p>
             {!showPasswordForm ? (
               <Button type="button" variant="outline" onClick={() => setShowPasswordForm(true)}>
@@ -146,7 +146,7 @@ export function ProfileDialog({
           </div>
 
           {isAdmin && (
-            <div className="border-t pt-4 flex flex-col gap-3">
+            <div className="border-t pt-3 flex flex-col gap-3 sm:pt-4">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">管理員設定</p>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-0.5">

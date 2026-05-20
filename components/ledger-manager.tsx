@@ -176,15 +176,17 @@ export function LedgerManager({
         variant="ghost"
         size="sm"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 font-medium max-w-[140px]"
+        className="flex h-9 max-w-[8.5rem] items-center gap-1.5 px-2 font-medium sm:h-8 sm:max-w-[140px] sm:px-3 max-[380px]:max-w-10"
+        aria-label={`切換帳本：${currentLedger?.name ?? '帳本'}`}
+        title={currentLedger?.name ?? '帳本'}
       >
         <BookOpen className="h-4 w-4 shrink-0" />
-        <span className="truncate">{currentLedger?.name ?? '帳本'}</span>
-        <span className="text-muted-foreground text-[10px] shrink-0">▼</span>
+        <span className="truncate max-[380px]:sr-only">{currentLedger?.name ?? '帳本'}</span>
+        <span className="text-muted-foreground text-[10px] shrink-0 max-[380px]:hidden">▼</span>
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) closeDialog(); else setOpen(true) }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-3 sm:max-h-[85vh] sm:p-4">
           {panel === 'list' ? (
             <>
               <DialogHeader>
@@ -278,7 +280,7 @@ export function LedgerManager({
                 </div>
               </DialogHeader>
 
-              <div className="flex flex-col gap-5 mt-2">
+              <div className="flex flex-col gap-4 mt-2 sm:gap-5">
                 {/* Name + Currency */}
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1.5">

@@ -114,7 +114,7 @@ export function MonthController({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-3">
-      <div className={`shrink-0 rounded-xl border bg-card px-4 py-3 flex items-center justify-between transition-opacity${isLoadingTransactions ? ' opacity-80' : ''}`}>
+      <div className={`shrink-0 rounded-xl border bg-card px-3 py-2.5 flex items-center justify-between gap-2 transition-opacity sm:px-4 sm:py-3${isLoadingTransactions ? ' opacity-80' : ''}`}>
         <MonthPicker
           year={year}
           month={month}
@@ -122,12 +122,12 @@ export function MonthController({
           onNavigateToToday={handleNavigateToToday}
         />
         <button
-          className="text-right select-none"
+          className="min-w-0 text-right select-none"
           onClick={() => totalBudget && setShowBudget((v) => !v)}
           style={{ cursor: totalBudget ? 'pointer' : 'default' }}
         >
           <p className="text-xs text-muted-foreground">當月總支出</p>
-          <p className="text-xl font-bold flex items-center justify-end gap-1">
+          <p className="flex items-center justify-end gap-1 text-lg font-bold sm:text-xl">
             {new Intl.NumberFormat('zh-TW', {
               style: 'currency',
               currency: 'TWD',

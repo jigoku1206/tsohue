@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>手機 UI/UX 檢查與改善計劃</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --panel: #ffffff;
+      --text: #20201d;
+      --muted: #696a61;
+      --line: #deded7;
+      --accent: #176b87;
+      --ok: #27784d;
+      --warn: #a45f13;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #171715;
+        --panel: #22221f;
+        --text: #f3f1e8;
+        --muted: #bbb8aa;
+        --line: #3a3933;
+        --accent: #6fb8d2;
+        --ok: #76c89a;
+        --warn: #efb56a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+    h1, h2 { line-height: 1.2; margin: 0; }
+    h1 { font-size: clamp(28px, 5vw, 42px); }
+    h2 { margin-top: 28px; font-size: 22px; }
+    p { margin: 10px 0 0; }
+    .lede { color: var(--muted); font-size: 17px; max-width: 760px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 2px 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    ul { padding-left: 20px; margin: 10px 0 0; }
+    li + li { margin-top: 6px; }
+    .priority { color: var(--warn); font-weight: 700; }
+    .done { color: var(--ok); font-weight: 700; }
+    code {
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 1px 5px;
+      background: color-mix(in srgb, var(--panel), var(--bg));
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: color-mix(in srgb, var(--panel), var(--accent) 8%); }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="tag">Mobile UI/UX Audit · 2026-05-21</span>
+    <h1>手機 UI/UX 檢查與改善計劃</h1>
+    <p class="lede">
+      這次檢查聚焦在 360px 到 430px 寬度的手機情境，特別是 dashboard、Demo dashboard、帳本/類別/個人資料管理，以及新增消費紀錄流程。
+    </p>
+
+    <section class="grid">
+      <article class="card">
+        <h2>主要問題</h2>
+        <ul>
+          <li><span class="priority">高</span>：手機頂部工具列同時放入品牌、帳本、類別、個人資料與登出，容易壓縮到帳本名稱與按鈕觸控區。</li>
+          <li><span class="priority">高</span>：Demo dashboard 與正式 dashboard 的高度模型不同，手機上可能出現整頁捲動與內部列表捲動互相搶手勢。</li>
+          <li><span class="priority">高</span>：新增消費紀錄視窗在低高度手機上容易需要上下滑動才能完成輸入。</li>
+          <li><span class="priority">中</span>：帳本、類別、個人資料 dialog 使用一般桌面高度設定，小螢幕可視範圍不足時不夠穩定。</li>
+          <li><span class="priority">中</span>：月摘要卡與 Demo banner 在手機上佔用較多垂直空間。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>改善方向</h2>
+        <ul>
+          <li>讓 dashboard shell 使用固定 viewport 高度，將捲動限制在內容區。</li>
+          <li>手機工具列採 icon-first 與短文字策略，保留可辨識的 <code>aria-label</code> 與 <code>title</code>。</li>
+          <li>管理 dialog 使用 <code>100dvh</code> 安全高度，手機降低 padding 與間距。</li>
+          <li>新增消費紀錄頁面採緊湊表單排列，計算機提供 compact 模式。</li>
+          <li>Demo banner 與月摘要卡降低手機高度，讓日曆和列表更早進入首屏。</li>
+        </ul>
+      </article>
+    </section>
+
+    <h2>已執行修改</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>區域</th>
+          <th>調整內容</th>
+          <th>預期效益</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dashboard header</td>
+          <td>縮小手機 logo、壓縮 gap、帳本按鈕限制寬度、類別與登出改為手機友善的 icon/短文字。</td>
+          <td>避免 360px 手機上工具列擠壓，提升觸控穩定性。</td>
+        </tr>
+        <tr>
+          <td>Demo dashboard</td>
+          <td>改為與正式版一致的固定高度 shell，內容區使用 <code>min-h-0</code> 與安全區 padding。</td>
+          <td>降低頁面捲動與內部列表捲動衝突。</td>
+        </tr>
+        <tr>
+          <td>新增消費紀錄</td>
+          <td>表單改為緊湊排列，日期/週期、分類/子分類、付款人/備註合併成手機可讀的雙欄區塊，計算機加入 compact 模式。</td>
+          <td>降低完成新增紀錄所需的垂直滑動。</td>
+        </tr>
+        <tr>
+          <td>管理 Dialog</td>
+          <td>帳本、類別、個人資料、Demo 個人資料 dialog 改用 <code>max-h: calc(100dvh - 1rem)</code> 並降低手機 padding。</td>
+          <td>小螢幕與瀏海安全區下仍可完整操作。</td>
+        </tr>
+        <tr>
+          <td>月摘要與 Demo banner</td>
+          <td>手機降低 padding、文字尺寸與高度，金額區避免擠壓。</td>
+          <td>首屏可顯示更多核心內容。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>後續建議</h2>
+    <ul>
+      <li>將報表頁的匯入/匯出與空狀態操作列再做一次手機專項檢查。</li>
+      <li>為 360x740、390x844、430x932 建立 Playwright 視覺回歸快照。</li>
+      <li>若管理功能持續增加，可將 header 次要操作整合為一個行動版更多選單。</li>
+    </ul>
+
+    <p class="done">本報告已依照上述計劃直接完成第一批高影響修正。</p>
+  </main>
+</body>
+</html>

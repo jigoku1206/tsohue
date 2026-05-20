@@ -42,7 +42,7 @@ export function DemoProfileDialog({ nickname: initialNickname }: { nickname: str
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-3 sm:max-h-[85vh] sm:p-4">
           <DialogHeader>
             <DialogTitle>個人資料</DialogTitle>
           </DialogHeader>

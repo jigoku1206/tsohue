@@ -15,9 +15,9 @@ export function DemoBanner({ onReset }: { onReset: () => void }) {
   if (dismissed) return null
 
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+    <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 sm:px-4 sm:text-sm">
       <Info className="h-4 w-4 shrink-0" />
-      <span className="flex-1">Demo 模式・資料儲存於您的瀏覽器，不會上傳至伺服器</span>
+      <span className="min-w-0 flex-1 leading-snug">Demo 模式・資料儲存於您的瀏覽器</span>
       <Button
         variant="ghost"
         size="sm"

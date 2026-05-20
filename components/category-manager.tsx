@@ -17,7 +17,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
+import { GripVertical, ArrowUpAZ, ArrowDownAZ, Tags } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -245,12 +245,22 @@ export function CategoryManager({
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} disabled={isLoading}>
-        {isLoading ? '類別載入中' : '管理類別'}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+        disabled={isLoading}
+        className="h-9 gap-1 px-2 sm:h-8 sm:px-3"
+        aria-label={isLoading ? '類別載入中' : '管理類別'}
+        title={isLoading ? '類別載入中' : '管理類別'}
+      >
+        <Tags className="h-4 w-4 shrink-0" />
+        <span className="hidden sm:inline">{isLoading ? '類別載入中' : '管理類別'}</span>
+        <span className="sm:hidden">{isLoading ? '載入' : '類別'}</span>
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setCats(initialCategories) }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-3 sm:max-h-[85vh] sm:p-4">
           <DialogHeader>
             <DialogTitle>類別管理</DialogTitle>
           </DialogHeader>
@@ -267,13 +277,13 @@ export function CategoryManager({
           </div>
 
           {/* Category list with top-level drag */}
-          <div className="flex flex-col gap-3 mt-1">
+          <div className="flex flex-col gap-2 mt-1 sm:gap-3">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleParentDragEnd}>
               <SortableContext items={cats.map((c) => c.id)} strategy={verticalListSortingStrategy}>
                 {cats.map((cat) => (
                   <SortableItem key={cat.id} id={cat.id}>
                     {(parentHandle) => (
-                      <div className="flex flex-col gap-1 border rounded-lg p-3">
+                      <div className="flex flex-col gap-1 border rounded-lg p-2.5 sm:p-3">
                         <CategoryRow
                           id={cat.id} name={cat.name}
                           dragHandle={parentHandle}
