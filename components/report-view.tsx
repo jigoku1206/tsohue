@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { AlertTriangle, ChevronDown, ChevronRight, Download, Upload } from 'lucide-react'
+import Papa from 'papaparse'
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 import type { LedgerBudget } from '@/app/actions/budgets'
@@ -76,32 +77,13 @@ function downloadCSV(content: string, filename: string) {
   a.href = url
   a.download = filename
   a.click()
-  URL.revokeObjectURL(url)
+  // Delay revocation so the browser has time to start the download (Safari compatibility)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function parseCSV(text: string): string[][] {
-  const content = text.startsWith('\uFEFF') ? text.slice(1) : text
-  return content
-    .split(/\r?\n/)
-    .filter((l) => l.trim())
-    .map((line) => {
-      const fields: string[] = []
-      let field = ''
-      let inQuotes = false
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i]
-        if (ch === '"') {
-          if (inQuotes && line[i + 1] === '"') { field += '"'; i++ }
-          else inQuotes = !inQuotes
-        } else if (ch === ',' && !inQuotes) {
-          fields.push(field); field = ''
-        } else {
-          field += ch
-        }
-      }
-      fields.push(field)
-      return fields
-    })
+  const result = Papa.parse<string[]>(text, { skipEmptyLines: true })
+  return result.data
 }
 
 // ── MonthSelect ───────────────────────────────────────────────
@@ -114,7 +96,8 @@ function MonthSelect({
   onChange: (year: number, month: number) => void
 }) {
   const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: currentYear - 2019 }, (_, i) => 2020 + i)
+  const startYear = currentYear - 10
+  const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
   return (
     <div className="flex gap-2">
