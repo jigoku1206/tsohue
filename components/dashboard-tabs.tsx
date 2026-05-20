@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarDays, BarChart2 } from 'lucide-react'
+import { CalendarDays, BarChart2, ChevronUp, ChevronDown } from 'lucide-react'
 import { CalendarView } from '@/components/calendar-view'
 import { ReportView } from '@/components/report-view'
 import type { Transaction } from '@/app/actions/transactions'
@@ -75,6 +75,11 @@ export function DashboardTabs({
           >
             <Icon className="h-4 w-4" />
             {label}
+            {key === 'calendar' && tab === 'calendar' && (
+              calendarOpen
+                ? <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                : <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            )}
           </button>
         ))}
       </div>

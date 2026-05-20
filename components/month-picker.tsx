@@ -54,12 +54,22 @@ export function MonthPicker({
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 w-8 p-0">
         <ChevronLeftIcon className="size-4" />
       </Button>
-      <button
-        onClick={handleLabelClick}
-        className={`text-sm font-medium w-24 text-center ${!isCurrentMonth ? 'cursor-pointer hover:text-primary' : 'cursor-default'}`}
-      >
-        {label}
-      </button>
+      <div className="flex flex-col items-center gap-0.5">
+        <button
+          onClick={handleLabelClick}
+          className={`text-sm font-medium w-24 text-center leading-none ${!isCurrentMonth ? 'cursor-pointer hover:text-primary' : 'cursor-default'}`}
+        >
+          {label}
+        </button>
+        {!isCurrentMonth && (
+          <button
+            onClick={handleLabelClick}
+            className="text-[10px] text-primary hover:underline leading-none"
+          >
+            回到今日
+          </button>
+        )}
+      </div>
       <Button
         variant="ghost"
         size="sm"
