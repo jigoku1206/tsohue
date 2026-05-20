@@ -228,7 +228,9 @@ create policy "transactions_insert" on public.transactions
       ledger_id is null
       or ledger_id in (
         select id from public.ledgers
-        where is_public = true or owner_id = auth.uid()
+        where is_public = true
+           or owner_id = auth.uid()
+           or id in (select get_accessible_ledger_ids())
       )
     )
   );
@@ -261,6 +263,15 @@ create policy "admins_can_modify_settings" on public.app_settings
 insert into public.app_settings (key, value)
 values ('registration_enabled', 'true'::jsonb)
 on conflict (key) do nothing;
+
+-- ─── Transaction indexes ─────────────────────────────────────────────────────
+
+create index if not exists idx_transactions_ledger_date
+  on public.transactions(ledger_id, date desc);
+
+create index if not exists idx_transactions_user_date
+  on public.transactions(user_id, date desc)
+  where ledger_id is null;
 
 -- ─── Ledger budgets ───────────────────────────────────────────────────────────
 
