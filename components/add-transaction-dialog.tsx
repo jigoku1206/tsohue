@@ -152,27 +152,25 @@ export function AddTransactionDialog({
       }}>+ 新增記錄</Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
-        <DialogContent className="flex flex-col max-h-[90dvh]">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[calc(100dvh-0.75rem)] max-w-[calc(100%-0.75rem)] flex-col gap-2 overflow-hidden p-3 sm:max-w-md sm:gap-4 sm:p-4">
+          <DialogHeader className="shrink-0 gap-1 pr-8">
             <DialogTitle>新增消費記錄</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto flex flex-col gap-4 mt-2 pr-1">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="date">{isRecurring ? '首期日期' : '日期'}</Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                required
-                className="w-fit"
-              />
-            </div>
-
-            {/* Recurring toggle */}
-            <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 cursor-pointer w-fit">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
+            <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label htmlFor="date" className="text-xs sm:text-sm">{isRecurring ? '首期日期' : '日期'}</Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  required
+                  className="h-9 min-w-0 text-sm"
+                />
+              </div>
+              <label className="flex h-9 items-center gap-2 whitespace-nowrap rounded-md border px-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-foreground"
@@ -181,12 +179,16 @@ export function AddTransactionDialog({
                 />
                 <span className="text-sm font-medium leading-none">週期消費</span>
               </label>
+            </div>
+
+            {/* Recurring options */}
+            <div className={isRecurring ? 'grid grid-cols-2 gap-2' : 'hidden'}>
               {isRecurring && (
-                <div className="grid grid-cols-2 gap-2 pl-6">
-                  <div className="flex flex-col gap-1.5">
-                    <Label>週期</Label>
+                <>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs sm:text-sm">週期</Label>
                     <Select value={recurringFrequency} onValueChange={(v) => { if (v) setRecurringFrequency(v as 'monthly' | 'weekly') }}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -195,10 +197,10 @@ export function AddTransactionDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label>期數</Label>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs sm:text-sm">期數</Label>
                     <Select value={recurringCount} onValueChange={(v) => { if (v) setRecurringCount(v) }}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -209,14 +211,14 @@ export function AddTransactionDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
+                </>
               )}
             </div>
 
             {/* Calculator */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-h-0 flex-col gap-1">
               <div className="flex items-center justify-between">
-                <Label>金額</Label>
+                <Label className="text-xs sm:text-sm">金額</Label>
                 <Select value={currency} onValueChange={(v) => setCurrency(v as CurrencyCode)}>
                   <SelectTrigger className="w-28 h-7 text-xs">
                     <SelectValue />
@@ -232,9 +234,10 @@ export function AddTransactionDialog({
                 key={open ? 'open' : 'closed'}
                 initialValue="0"
                 onChange={setAmount}
+                compact
               />
               {currency !== 'TWD' && (
-                <p className={`text-xs ${isFuture ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <p className={`truncate text-[11px] ${isFuture ? 'text-destructive' : 'text-muted-foreground'}`}>
                   {loadingRates
                     ? '匯率載入中…'
                     : currentRate
@@ -247,10 +250,10 @@ export function AddTransactionDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1.5">
-                <Label>類別</Label>
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label className="text-xs sm:text-sm">類別</Label>
                 <Select value={categoryName} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 min-w-0">
                     <SelectValue placeholder="選擇類別" />
                   </SelectTrigger>
                   <SelectContent>
@@ -260,14 +263,14 @@ export function AddTransactionDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>子類別</Label>
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label className="text-xs sm:text-sm">子類別</Label>
                 <Select
                   value={subcategoryName}
                   onValueChange={(v) => setSubcategoryName(v ?? '')}
                   disabled={subcategories.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 min-w-0">
                     <SelectValue placeholder={subcategories.length === 0 ? '—' : '選擇子類別'} />
                   </SelectTrigger>
                   <SelectContent>
@@ -279,35 +282,40 @@ export function AddTransactionDialog({
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="paid_by">付款人</Label>
-              {showMemberSelect ? (
-                <Select value={paidBy} onValueChange={(v) => { if (v) setPaidBy(v) }}>
-                  <SelectTrigger id="paid_by">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ledgerMembers!.map((m) => (
-                      <SelectItem key={m.id} value={m.nickname}>{m.nickname}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input id="paid_by" name="paid_by" defaultValue={userNickname} required />
-              )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label htmlFor="paid_by" className="text-xs sm:text-sm">付款人</Label>
+                {showMemberSelect ? (
+                  <Select value={paidBy} onValueChange={(v) => { if (v) setPaidBy(v) }}>
+                    <SelectTrigger id="paid_by" className="h-9 min-w-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ledgerMembers!.map((m) => (
+                        <SelectItem key={m.id} value={m.nickname}>{m.nickname}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input id="paid_by" name="paid_by" defaultValue={userNickname} required className="h-9 min-w-0" />
+                )}
+              </div>
+              <div className="flex min-w-0 flex-col gap-1">
+                <Label htmlFor="note" className="text-xs sm:text-sm">備註</Label>
+                <Input id="note" name="note" placeholder="（選填）" className="h-9 min-w-0" />
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="note">備註</Label>
-              <Input id="note" name="note" placeholder="（選填）" />
+            <div className="min-h-4">
+              {!loading && (() => {
+                if (!categoryName) return <p className="truncate text-xs text-destructive">請先選擇類別</p>
+                if (!amount || amount === '0') return <p className="truncate text-xs text-destructive">請輸入金額</p>
+                if (currency !== 'TWD' && loadingRates) return <p className="truncate text-xs text-muted-foreground">匯率載入中，請稍候…</p>
+                return null
+              })()}
             </div>
-            {!loading && (() => {
-              if (!categoryName) return <p className="text-xs text-destructive -mt-2">請先選擇類別</p>
-              if (!amount || amount === '0') return <p className="text-xs text-destructive -mt-2">請輸入金額</p>
-              if (currency !== 'TWD' && loadingRates) return <p className="text-xs text-muted-foreground -mt-2">匯率載入中，請稍候…</p>
-              return null
-            })()}
             <Button
               type="submit"
+              className="h-9 shrink-0"
               disabled={loading || !categoryName || !amount || amount === '0' || (currency !== 'TWD' && (loadingRates || !currentRate))}
             >
               {loading ? '儲存中…' : '儲存'}

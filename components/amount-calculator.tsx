@@ -40,9 +40,11 @@ function fmt(n: number): string {
 export function AmountCalculator({
   initialValue = '0',
   onChange,
+  compact = false,
 }: {
   initialValue?: string
   onChange: (val: string) => void
+  compact?: boolean
 }) {
   const [state, setState] = useState<CalcState>({
     ...INIT,
@@ -204,11 +206,11 @@ export function AmountCalculator({
   ]
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={compact ? 'flex flex-col gap-1' : 'flex flex-col gap-1.5'}>
       {/* Display */}
-      <div className="bg-muted rounded-lg px-3 pt-1.5 pb-2 text-right">
-        <p className="text-xs text-muted-foreground min-h-[1rem]">{expression}</p>
-        <p className="text-3xl font-mono font-semibold truncate leading-tight">{display}</p>
+      <div className={compact ? 'bg-muted rounded-lg px-2.5 py-1 text-right' : 'bg-muted rounded-lg px-3 pt-1.5 pb-2 text-right'}>
+        <p className={compact ? 'text-[10px] text-muted-foreground h-3' : 'text-xs text-muted-foreground min-h-[1rem]'}>{expression}</p>
+        <p className={compact ? 'text-2xl font-mono font-semibold truncate leading-tight' : 'text-3xl font-mono font-semibold truncate leading-tight'}>{display}</p>
       </div>
 
       {/* Button grid */}
@@ -221,7 +223,8 @@ export function AmountCalculator({
                 type="button"
                 onClick={btn.action}
                 className={[
-                  'flex items-center justify-center rounded-lg h-12 text-base font-medium select-none transition-colors active:scale-95',
+                  'flex items-center justify-center rounded-lg text-base font-medium select-none transition-colors active:scale-95',
+                  compact ? 'h-9 max-[380px]:h-8' : 'h-12',
                   btn.wide ? 'col-span-2' : '',
                   btn.kind === 'digit'  ? 'bg-background border hover:bg-muted'                   : '',
                   btn.kind === 'action' ? 'bg-muted text-muted-foreground hover:bg-muted/60'       : '',
