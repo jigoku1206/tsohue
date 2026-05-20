@@ -226,15 +226,26 @@ export function TransactionList({
               </DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-2 mt-2">
-              <Button onClick={() => handleScopeChosen('all')}>
-                全部週期
-              </Button>
-              <Button variant="outline" onClick={() => handleScopeChosen('from_date')}>
-                此筆及之後
-              </Button>
-              <Button variant="ghost" onClick={() => setScopePending(null)}>
+              <button
+                onClick={() => handleScopeChosen('all')}
+                className="flex flex-col gap-0.5 px-4 py-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+              >
+                <span className="font-medium text-sm">全部週期</span>
+                <span className="text-xs text-muted-foreground">修改這個規則的所有過去與未來記錄</span>
+              </button>
+              <button
+                onClick={() => handleScopeChosen('from_date')}
+                className="flex flex-col gap-0.5 px-4 py-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+              >
+                <span className="font-medium text-sm">此筆及之後</span>
+                <span className="text-xs text-muted-foreground">僅影響 {detail.date} 起的未來記錄（截斷原規則）</span>
+              </button>
+              <button
+                onClick={() => setScopePending(null)}
+                className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
                 取消
-              </Button>
+              </button>
             </div>
           </DialogContent>
         </Dialog>
