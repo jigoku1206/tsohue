@@ -9,6 +9,7 @@ import {
   generateRecurringDates,
   lastDayOfMonth,
 } from '@/lib/recurring-utils'
+import { parseRecurringForm, parseTransactionForm } from '@/lib/validation'
 
 export type RecurringRule = {
   id: string
@@ -87,7 +88,10 @@ export async function ensureRecurringForMonth(
   }
 
   if (toInsert.length > 0) {
-    await supabase.from('transactions').insert(toInsert)
+    await supabase.from('transactions').upsert(toInsert, {
+      onConflict: 'recurring_id,date',
+      ignoreDuplicates: true,
+    })
   }
 }
 
@@ -98,44 +102,34 @@ export async function createRecurringRule(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '未登入' }
 
-  const startDate = formData.get('date') as string
-  const frequency = formData.get('recurring_frequency') as 'monthly' | 'weekly'
-  const rawCount = formData.get('recurring_count') as string
-  const amount = parseFloat(formData.get('amount') as string)
-  const currency = (formData.get('currency') as string) || 'TWD'
-  const exchangeRate = parseFloat(formData.get('exchange_rate') as string) || 1
-  const category = formData.get('category') as string
-  const subcategory = (formData.get('subcategory') as string) || null
-  const note = (formData.get('note') as string) || null
-  const paidBy = formData.get('paid_by') as string
-  const ledgerId = (formData.get('ledger_id') as string) || null
+  const parsed = parseRecurringForm(formData)
+  if (!parsed.ok) return { error: parsed.error }
 
   let endDate: string | null = null
-  if (rawCount !== 'indefinite') {
-    const count = parseInt(rawCount) || 3
-    const dates = generateRecurringDates(startDate, frequency, count)
+  if (parsed.value.count !== 'indefinite') {
+    const dates = generateRecurringDates(parsed.value.date, parsed.value.frequency, parsed.value.count)
     endDate = dates[dates.length - 1]
   }
 
   const { error } = await supabase.from('recurring_rules').insert({
     user_id: user.id,
-    ledger_id: ledgerId,
-    amount,
-    currency,
-    exchange_rate: exchangeRate,
-    category,
-    subcategory,
-    note,
-    paid_by: paidBy,
-    frequency,
-    start_date: startDate,
+    ledger_id: parsed.value.ledger_id,
+    amount: parsed.value.amount,
+    currency: parsed.value.currency,
+    exchange_rate: parsed.value.exchange_rate,
+    category: parsed.value.category,
+    subcategory: parsed.value.subcategory,
+    note: parsed.value.note,
+    paid_by: parsed.value.paid_by,
+    frequency: parsed.value.frequency,
+    start_date: parsed.value.date,
     end_date: endDate,
   })
 
   if (error) return { error: error.message }
 
-  const [y, m] = startDate.split('-').map(Number)
-  await ensureRecurringForMonth(supabase, user.id, y, m, ledgerId ?? undefined)
+  const [y, m] = parsed.value.date.split('-').map(Number)
+  await ensureRecurringForMonth(supabase, user.id, y, m, parsed.value.ledger_id ?? undefined)
 
   revalidatePath('/dashboard')
   return { error: null }
@@ -160,37 +154,57 @@ export async function updateRecurringByScope(
 
   if (!rule) return { error: '找不到週期規則' }
 
-  const amount = parseFloat(formData.get('amount') as string)
-  const currency = (formData.get('currency') as string) || 'TWD'
-  const exchangeRate = parseFloat(formData.get('exchange_rate') as string) || 1
-  const category = formData.get('category') as string
-  const subcategory = (formData.get('subcategory') as string) || null
-  const note = (formData.get('note') as string) || null
-  const paidBy = formData.get('paid_by') as string
-  const newDate = formData.get('date') as string
+  const parsed = parseTransactionForm(formData)
+  if (!parsed.ok) return { error: parsed.error }
 
-  const newFields = { amount, currency, exchange_rate: exchangeRate, category, subcategory, note, paid_by: paidBy }
-  const txFields = { ...newFields, date: undefined } // date updated individually only for 'all' date change
+  const newFields = {
+    amount: parsed.value.amount,
+    currency: parsed.value.currency,
+    exchange_rate: parsed.value.exchange_rate,
+    category: parsed.value.category,
+    subcategory: parsed.value.subcategory,
+    note: parsed.value.note,
+    paid_by: parsed.value.paid_by,
+  }
+  const newDate = parsed.value.date
 
   if (scope === 'all') {
-    await supabase.from('recurring_rules').update(newFields).eq('id', ruleId)
-    await supabase.from('transactions').update(newFields).eq('recurring_id', ruleId).eq('user_id', user.id)
+    const { error: ruleError } = await supabase.from('recurring_rules').update(newFields).eq('id', ruleId)
+    if (ruleError) return { error: ruleError.message }
+
+    const { error: txError } = await supabase
+      .from('transactions')
+      .update(newFields)
+      .eq('recurring_id', ruleId)
+      .eq('user_id', user.id)
+    if (txError) return { error: txError.message }
   } else {
     // from_date scope
     const prev = prevOccurrence(rule.start_date, rule.frequency, fromDate)
 
     if (prev === null) {
       // fromDate <= start_date: update rule in place with new start
-      await supabase.from('recurring_rules')
+      const { error: ruleError } = await supabase.from('recurring_rules')
         .update({ ...newFields, start_date: newDate })
         .eq('id', ruleId)
-      await supabase.from('transactions').update(newFields).eq('recurring_id', ruleId).eq('user_id', user.id)
+      if (ruleError) return { error: ruleError.message }
+
+      const { error: txError } = await supabase
+        .from('transactions')
+        .update(newFields)
+        .eq('recurring_id', ruleId)
+        .eq('user_id', user.id)
+      if (txError) return { error: txError.message }
     } else {
       // Truncate old rule
-      await supabase.from('recurring_rules').update({ end_date: prev }).eq('id', ruleId)
+      const { error: truncateError } = await supabase
+        .from('recurring_rules')
+        .update({ end_date: prev })
+        .eq('id', ruleId)
+      if (truncateError) return { error: truncateError.message }
 
       // Create new rule from fromDate
-      const { data: newRule } = await supabase
+      const { data: newRule, error: insertError } = await supabase
         .from('recurring_rules')
         .insert({
           ...newFields,
@@ -202,20 +216,19 @@ export async function updateRecurringByScope(
         })
         .select()
         .single()
+      if (insertError) return { error: insertError.message }
 
       if (newRule) {
-        await supabase
+        const { error: txError } = await supabase
           .from('transactions')
           .update({ recurring_id: newRule.id, ...newFields })
           .eq('recurring_id', ruleId)
           .gte('date', fromDate)
           .eq('user_id', user.id)
+        if (txError) return { error: txError.message }
       }
     }
   }
-
-  // Suppress unused variable warning
-  void txFields
 
   revalidatePath('/dashboard')
   return { error: null }
@@ -241,21 +254,34 @@ export async function deleteRecurringByScope(
 
   if (scope === 'all') {
     // FK is ON DELETE SET NULL, so delete transactions first, then rule
-    await supabase.from('transactions').delete().eq('recurring_id', ruleId).eq('user_id', user.id)
-    await supabase.from('recurring_rules').delete().eq('id', ruleId)
+    const { error: txError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('recurring_id', ruleId)
+      .eq('user_id', user.id)
+    if (txError) return { error: txError.message }
+
+    const { error: ruleError } = await supabase.from('recurring_rules').delete().eq('id', ruleId)
+    if (ruleError) return { error: ruleError.message }
   } else {
-    await supabase.from('transactions').delete()
+    const { error: txError } = await supabase.from('transactions').delete()
       .eq('recurring_id', ruleId)
       .gte('date', fromDate)
       .eq('user_id', user.id)
+    if (txError) return { error: txError.message }
 
     const prev = prevOccurrence(rule.start_date, rule.frequency, fromDate)
 
     if (prev === null) {
       // Nothing before fromDate — delete the whole rule
-      await supabase.from('recurring_rules').delete().eq('id', ruleId)
+      const { error: ruleError } = await supabase.from('recurring_rules').delete().eq('id', ruleId)
+      if (ruleError) return { error: ruleError.message }
     } else {
-      await supabase.from('recurring_rules').update({ end_date: prev }).eq('id', ruleId)
+      const { error: ruleError } = await supabase
+        .from('recurring_rules')
+        .update({ end_date: prev })
+        .eq('id', ruleId)
+      if (ruleError) return { error: ruleError.message }
     }
   }
 

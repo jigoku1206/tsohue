@@ -21,7 +21,6 @@ import {
 import {
   type Ledger,
   type LedgerMember,
-  type UserProfile,
 } from '@/app/actions/ledgers'
 import { useActions } from '@/lib/actions-context'
 import { CURRENCIES, type CurrencyCode } from '@/lib/currencies'
@@ -40,18 +39,24 @@ export function LedgerManager({
   currentUserId: string
   onSwitchLedger?: (id: string) => void
 }) {
-  const { getLedgerMembers, getAllUsers, createLedger, updateLedger, deleteLedger, setLedgerMembers } = useActions()
+  const {
+    getLedgerMembers,
+    createLedger,
+    updateLedger,
+    deleteLedger,
+    addLedgerMemberByEmail,
+    removeLedgerMember,
+  } = useActions()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<Panel>('list')
   const [activeLedger, setActiveLedger] = useState<Ledger | null>(null)
 
   // Settings state
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([])
   const [currentMembers, setCurrentMembers] = useState<LedgerMember[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [loadingSettings, setLoadingSettings] = useState(false)
-  const [savingMembers, setSavingMembers] = useState(false)
+  const [savingMember, setSavingMember] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
   const [renamingName, setRenamingName] = useState('')
   const [defaultCurrency, setDefaultCurrency] = useState<CurrencyCode>('TWD')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -66,9 +71,8 @@ export function LedgerManager({
     setOpen(false)
     setPanel('list')
     setActiveLedger(null)
-    setAllUsers([])
     setCurrentMembers([])
-    setSelectedIds(new Set())
+    setInviteEmail('')
   }
 
   function switchLedger(id: string) {
@@ -87,24 +91,10 @@ export function LedgerManager({
     setPanel('settings')
     setLoadingSettings(true)
 
-    const [users, members] = await Promise.all([
-      getAllUsers(),
-      getLedgerMembers(ledger.id),
-    ])
+    const members = await getLedgerMembers(ledger.id)
 
-    setAllUsers(users)
     setCurrentMembers(members)
-    setSelectedIds(new Set(members.map((m) => m.user_id)))
     setLoadingSettings(false)
-  }
-
-  function toggleUser(userId: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(userId)) next.delete(userId)
-      else next.add(userId)
-      return next
-    })
   }
 
   async function handleCreateLedger() {
@@ -134,16 +124,30 @@ export function LedgerManager({
     }
   }
 
-  async function handleSaveMembers() {
-    if (!activeLedger) return
-    setSavingMembers(true)
-    const result = await setLedgerMembers(activeLedger.id, Array.from(selectedIds))
-    setSavingMembers(false)
+  async function handleAddMember() {
+    if (!activeLedger || !inviteEmail.trim()) return
+    setSavingMember(true)
+    const result = await addLedgerMemberByEmail(activeLedger.id, inviteEmail.trim())
+    setSavingMember(false)
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success('成員已更新')
-      router.refresh()
+      toast.success('成員已加入')
+      setInviteEmail('')
+      setCurrentMembers(await getLedgerMembers(activeLedger.id))
+    }
+  }
+
+  async function handleRemoveMember(userId: string) {
+    if (!activeLedger) return
+    setSavingMember(true)
+    const result = await removeLedgerMember(activeLedger.id, userId)
+    setSavingMember(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('成員已移除')
+      setCurrentMembers((members) => members.filter((m) => m.user_id !== userId))
     }
   }
 
@@ -305,45 +309,58 @@ export function LedgerManager({
                   </Button>
                 </div>
 
-                {/* Members checklist */}
+                {/* Members */}
                 <div className="flex flex-col gap-2">
                   <p className="text-sm font-medium">分享給成員</p>
                   {loadingSettings ? (
-                    <p className="text-sm text-muted-foreground py-2">載入使用者清單…</p>
-                  ) : allUsers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2">目前沒有其他使用者</p>
+                    <p className="text-sm text-muted-foreground py-2">載入成員清單…</p>
                   ) : (
                     <>
-                      <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                        {allUsers.map((u) => {
-                          const checked = selectedIds.has(u.id)
-                          return (
-                            <li key={u.id}>
-                              <label className="flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors">
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleUser(u.id)}
-                                  className="h-4 w-4 rounded"
-                                />
-                                <div className="flex flex-col gap-0.5 min-w-0">
-                                  <span className="text-sm font-medium">{u.nickname}</span>
-                                  {u.email && (
-                                    <span className="text-xs text-muted-foreground truncate">{u.email}</span>
-                                  )}
-                                </div>
-                              </label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          placeholder="member@example.com"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleAddMember() }}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleAddMember}
+                          disabled={!inviteEmail.trim() || savingMember}
+                          className="shrink-0"
+                        >
+                          加入
+                        </Button>
+                      </div>
+                      {currentMembers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2">尚未分享給其他成員</p>
+                      ) : (
+                        <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+                          {currentMembers.map((member) => (
+                            <li
+                              key={member.user_id}
+                              className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border"
+                            >
+                              <div className="flex flex-col gap-0.5 min-w-0">
+                                <span className="text-sm font-medium">{member.nickname}</span>
+                                {member.email && (
+                                  <span className="text-xs text-muted-foreground truncate">{member.email}</span>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() => handleRemoveMember(member.user_id)}
+                                disabled={savingMember}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </li>
-                          )
-                        })}
-                      </ul>
-                      <Button
-                        onClick={handleSaveMembers}
-                        disabled={savingMembers}
-                        size="sm"
-                      >
-                        {savingMembers ? '儲存中…' : '儲存成員設定'}
-                      </Button>
+                          ))}
+                        </ul>
+                      )}
                     </>
                   )}
                 </div>

@@ -418,6 +418,14 @@ export function createDemoActions(setState: SetState, getState: GetState): Actio
       return { error: null }
     },
 
+    async addLedgerMemberByEmail() {
+      return { error: 'Demo 模式不支援新增成員' }
+    },
+
+    async removeLedgerMember() {
+      return { error: null }
+    },
+
     // ── Profile ───────────────────────────────────────────────────────────────
 
     async updateProfile(_prev, formData) {

@@ -30,6 +30,8 @@ export interface ActionsContextValue {
   getLedgerMembers: (ledgerId: string) => Promise<LedgerMember[]>
   getAllUsers: () => Promise<UserProfile[]>
   setLedgerMembers: (ledgerId: string, userIds: string[]) => Promise<{ error?: string | null }>
+  addLedgerMemberByEmail: (ledgerId: string, email: string) => Promise<{ error?: string | null }>
+  removeLedgerMember: (ledgerId: string, userId: string) => Promise<{ error?: string | null }>
   // profile
   updateProfile: (_prev: { error: string } | null, formData: FormData) => Promise<{ error: string } | null>
   // exchange rates
@@ -78,6 +80,8 @@ import {
   getLedgerMembers,
   getAllUsers,
   setLedgerMembers,
+  addLedgerMemberByEmail,
+  removeLedgerMember,
 } from '@/app/actions/ledgers'
 import { updateProfile } from '@/app/actions/profile'
 import { fetchExchangeRates } from '@/lib/fetch-exchange-rates'
@@ -102,6 +106,8 @@ const liveValue: ActionsContextValue = {
   getLedgerMembers,
   getAllUsers,
   setLedgerMembers,
+  addLedgerMemberByEmail,
+  removeLedgerMember,
   updateProfile,
   fetchExchangeRates,
   importTransactions,

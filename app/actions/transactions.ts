@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { ensureRecurringForMonth } from '@/app/actions/recurring'
+import { parseMonth, parseTransactionForm } from '@/lib/validation'
 
 export type Transaction = {
   id: string
@@ -27,6 +28,10 @@ export async function getTransactionsRange(
   endMonth: number,
   ledgerId?: string
 ): Promise<Transaction[]> {
+  const startMonthParsed = parseMonth(startYear, startMonth)
+  const endMonthParsed = parseMonth(endYear, endMonth)
+  if (!startMonthParsed.ok || !endMonthParsed.ok) return []
+
   const supabase = await createClient()
   const start = `${startYear}-${String(startMonth).padStart(2, '0')}-01`
   const endLastDay = new Date(endYear, endMonth, 0).getDate()
@@ -51,6 +56,9 @@ export async function getTransactions(
   month: number,
   ledgerId?: string
 ): Promise<Transaction[]> {
+  const parsedMonth = parseMonth(year, month)
+  if (!parsedMonth.ok) return []
+
   const supabase = await createClient()
 
   // Lazy-generate recurring transactions for this month before fetching
@@ -85,21 +93,20 @@ export async function addTransaction(formData: FormData) {
 
   if (!user) return { error: '未登入' }
 
-  const subcategory = (formData.get('subcategory') as string) || null
-  const ledgerId = (formData.get('ledger_id') as string) || null
-  const currency = (formData.get('currency') as string) || 'TWD'
-  const exchangeRate = parseFloat(formData.get('exchange_rate') as string) || 1
+  const parsed = parseTransactionForm(formData)
+  if (!parsed.ok) return { error: parsed.error }
+
   const { error } = await supabase.from('transactions').insert({
-    date: formData.get('date') as string,
-    amount: parseFloat(formData.get('amount') as string),
-    currency,
-    exchange_rate: exchangeRate,
-    category: formData.get('category') as string,
-    subcategory,
-    note: (formData.get('note') as string) || null,
-    paid_by: formData.get('paid_by') as string,
+    date: parsed.value.date,
+    amount: parsed.value.amount,
+    currency: parsed.value.currency,
+    exchange_rate: parsed.value.exchange_rate,
+    category: parsed.value.category,
+    subcategory: parsed.value.subcategory,
+    note: parsed.value.note,
+    paid_by: parsed.value.paid_by,
     user_id: user.id,
-    ledger_id: ledgerId,
+    ledger_id: parsed.value.ledger_id,
   })
 
   if (error) return { error: error.message }
@@ -122,27 +129,29 @@ export async function updateTransaction(id: string, formData: FormData) {
   if (!user) return { error: '未登入' }
 
   const admin = await getIsAdmin(supabase, user.id)
-  const currency = (formData.get('currency') as string) || 'TWD'
-  const exchangeRate = parseFloat(formData.get('exchange_rate') as string) || 1
+  const parsed = parseTransactionForm(formData)
+  if (!parsed.ok) return { error: parsed.error }
 
   let query = supabase
     .from('transactions')
     .update({
-      date: formData.get('date') as string,
-      amount: parseFloat(formData.get('amount') as string),
-      currency,
-      exchange_rate: exchangeRate,
-      category: formData.get('category') as string,
-      subcategory: (formData.get('subcategory') as string) || null,
-      note: (formData.get('note') as string) || null,
-      paid_by: formData.get('paid_by') as string,
+      date: parsed.value.date,
+      amount: parsed.value.amount,
+      currency: parsed.value.currency,
+      exchange_rate: parsed.value.exchange_rate,
+      category: parsed.value.category,
+      subcategory: parsed.value.subcategory,
+      note: parsed.value.note,
+      paid_by: parsed.value.paid_by,
     })
     .eq('id', id)
+    .select('id')
 
   if (!admin) query = query.eq('user_id', user.id)
 
-  const { error } = await query
+  const { data, error } = await query
   if (error) return { error: error.message }
+  if (!data?.length) return { error: '找不到消費記錄或無修改權限' }
   revalidatePath('/dashboard')
   return { error: null }
 }
@@ -157,8 +166,9 @@ export async function deleteTransaction(id: string) {
   let query = supabase.from('transactions').delete().eq('id', id)
   if (!admin) query = query.eq('user_id', user.id)
 
-  const { error } = await query
+  const { data, error } = await query.select('id')
   if (error) return { error: error.message }
+  if (!data?.length) return { error: '找不到消費記錄或無刪除權限' }
   revalidatePath('/dashboard')
   return { error: null }
 }

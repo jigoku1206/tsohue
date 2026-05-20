@@ -52,29 +52,33 @@ export function EditTransactionDialog({
     (transaction.currency as CurrencyCode) ?? 'TWD'
   )
   const [selectedDate, setSelectedDate] = useState(transaction.date)
-  const [rates, setRates] = useState<ExchangeRates>({})
-  const [loadingRates, setLoadingRates] = useState(false)
+  const [rateState, setRateState] = useState<{ key: string; rates: ExchangeRates } | null>(null)
 
   const selectedCategory = categories.find((c) => c.name === categoryName)
   const subcategories = selectedCategory?.subcategories ?? []
   const isFuture = selectedDate > todayStr()
+  const rateKey = `${selectedDate}:${currency}`
+  const rates = rateState?.key === rateKey ? rateState.rates : {}
   // Use fetched rate, fallback to stored rate if API fails
   const currentRate = currency === 'TWD'
     ? 1
     : (rates[currency] ?? (isFuture ? null : transaction.exchange_rate) ?? null)
+  const loadingRates = currency !== 'TWD' && !currentRate && rateState?.key !== rateKey
   const currencyMeta = CURRENCIES.find((c) => c.code === currency)!
 
   useEffect(() => {
     if (!open || currency === 'TWD') {
-      setRates({})
       return
     }
-    setLoadingRates(true)
+    let cancelled = false
     fetchExchangeRates(selectedDate).then((r) => {
-      setRates(r)
-      setLoadingRates(false)
+      if (cancelled) return
+      setRateState({ key: rateKey, rates: r })
     })
-  }, [open, selectedDate, currency])
+    return () => {
+      cancelled = true
+    }
+  }, [currency, fetchExchangeRates, open, rateKey, selectedDate])
 
   function handleCategoryChange(v: string | null) {
     setCategoryName(v ?? '')

@@ -137,7 +137,9 @@ export function AmountCalculator({
 
   // Keep a ref to all handlers so the single keydown listener never goes stale
   const handlersRef = useRef({ inputDigit, inputDecimal, clear, backspace, handleEquals, handleOperator, percent })
-  handlersRef.current = { inputDigit, inputDecimal, clear, backspace, handleEquals, handleOperator, percent }
+  useEffect(() => {
+    handlersRef.current = { inputDigit, inputDecimal, clear, backspace, handleEquals, handleOperator, percent }
+  })
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

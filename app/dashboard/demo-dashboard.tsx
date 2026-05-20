@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -38,40 +38,30 @@ export function DemoDashboard() {
 
   const [state, setState] = useState<DemoState>(loadOrSeed)
 
-  const stateRef = useRef(state)
-  stateRef.current = state
+  const displayState = useMemo(() => {
+    const ledgerId = currentLedgerId ?? (state.ledgers.find((l) => l.is_public)?.id ?? null)
+    return demoEnsureRecurringForMonth(state, year, month, ledgerId)
+  }, [currentLedgerId, month, state, year])
 
-  const actions = useMemo(() => createDemoActions(setState, () => stateRef.current), [])
-
-  // Track which (year, month, ledgerId) combos have already been processed so
-  // rapid month navigation doesn't re-run the idempotent generation unnecessarily.
-  const processedMonths = useRef(new Set<string>())
-
-  // Lazy-generate recurring transactions whenever month/ledger changes
-  useEffect(() => {
-    const key = `${year}-${month}-${currentLedgerId ?? 'null'}`
-    if (processedMonths.current.has(key)) return
-    processedMonths.current.add(key)
-    setState((prev) => {
-      const ledgerId = currentLedgerId ?? (prev.ledgers.find((l) => l.is_public)?.id ?? null)
-      return demoEnsureRecurringForMonth(prev, year, month, ledgerId)
-    })
-  }, [year, month, currentLedgerId])
+  const actions = useMemo(
+    () => createDemoActions(setState, () => displayState),
+    [displayState]
+  )
 
   // Resolve current ledger
-  const publicLedger = state.ledgers.find((l) => l.is_public)
+  const publicLedger = displayState.ledgers.find((l) => l.is_public)
   const currentLedger = currentLedgerId
-    ? (state.ledgers.find((l) => l.id === currentLedgerId) ?? publicLedger)
+    ? (displayState.ledgers.find((l) => l.id === currentLedgerId) ?? publicLedger)
     : publicLedger
 
   // Filter transactions for current month + ledger
   const monthPrefix = `${year}-${String(month).padStart(2, '0')}`
   const transactions = useMemo(
     () =>
-      state.transactions.filter(
+      displayState.transactions.filter(
         (tx) => tx.ledger_id === currentLedger?.id && tx.date.startsWith(monthPrefix)
       ),
-    [state.transactions, currentLedger?.id, monthPrefix]
+    [displayState.transactions, currentLedger?.id, monthPrefix]
   )
 
   const monthlyTotal = transactions.reduce(
@@ -79,7 +69,7 @@ export function DemoDashboard() {
     0
   )
 
-  const totalBudget = state.ledger_budgets.find(
+  const totalBudget = displayState.ledger_budgets.find(
     (b) => b.ledger_id === currentLedger?.id && b.category === null
   )?.monthly_limit ?? null
 
@@ -128,7 +118,7 @@ export function DemoDashboard() {
           </Link>
           <div className="flex items-center gap-1">
             <LedgerManager
-              ledgers={state.ledgers}
+              ledgers={displayState.ledgers}
               currentLedgerId={currentLedger?.id ?? DEMO_PUBLIC_LEDGER_ID}
               currentUserId={DEMO_USER_ID}
               onSwitchLedger={(id) => {
@@ -136,8 +126,8 @@ export function DemoDashboard() {
                 window.history.replaceState(null, '', `/dashboard?year=${year}&month=${month}&ledger=${id}`)
               }}
             />
-            <CategoryManager initialCategories={state.categories} />
-            <DemoProfileDialog nickname={state.profile.nickname} />
+            <CategoryManager initialCategories={displayState.categories} />
+            <DemoProfileDialog nickname={displayState.profile.nickname} />
             <Button
               variant="ghost"
               size="sm"
@@ -198,15 +188,15 @@ export function DemoDashboard() {
           year={year}
           month={month}
           transactions={transactions}
-          categories={state.categories}
+          categories={displayState.categories}
           currentUserId={DEMO_USER_ID}
-          userNickname={state.profile.nickname}
+          userNickname={displayState.profile.nickname}
           ledgerId={currentLedger?.id}
           defaultCurrency={currentLedger?.default_currency}
           isAdmin
           onJumpToToday={handleNavigateToToday}
           onRefresh={handleRefresh}
-          ledgerMembers={[{ id: DEMO_USER_ID, nickname: state.profile.nickname }]}
+          ledgerMembers={[{ id: DEMO_USER_ID, nickname: displayState.profile.nickname }]}
         />
       </div>
     </ActionsContext.Provider>

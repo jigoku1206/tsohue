@@ -124,11 +124,11 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, nickname, email')
+    .select('id, nickname')
     .neq('id', user.id)
     .order('nickname', { ascending: true })
 
-  return data ?? []
+  return (data ?? []).map((profile) => ({ ...profile, email: null }))
 }
 
 export async function setLedgerMembers(
@@ -172,13 +172,16 @@ export async function addLedgerMemberByEmail(
   email: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient()
+  const normalizedEmail = email.trim().toLowerCase()
+  if (!normalizedEmail || !normalizedEmail.includes('@')) return { error: '電子郵件格式不正確' }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', email)
-    .single()
+  const { data: profiles, error: lookupError } = await supabase.rpc('find_profile_by_email', {
+    p_email: normalizedEmail,
+  })
 
+  if (lookupError) return { error: lookupError.message }
+
+  const profile = profiles?.[0]
   if (!profile) return { error: '找不到此電子郵件的使用者' }
 
   const { error } = await supabase

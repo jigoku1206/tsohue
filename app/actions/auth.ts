@@ -29,12 +29,29 @@ export async function register(
 ): Promise<AuthState> {
   const supabase = await createClient()
 
+  const { data: setting } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'registration_enabled')
+    .maybeSingle()
+
+  if (setting && setting.value === false) {
+    return { error: '目前不開放註冊，請聯絡管理員。' }
+  }
+
   const nickname = (formData.get('nickname') as string)?.trim()
   if (!nickname) return { error: '請填寫暱稱' }
+  if (nickname.length > 80) return { error: '暱稱過長' }
+
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const password = formData.get('password') as string
+  if (!email || !email.includes('@')) return { error: '電子郵件格式不正確' }
+  if (!password || password.length < 6) return { error: '密碼至少需要 6 個字元' }
 
   const { data, error } = await supabase.auth.signUp({
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
+    email,
+    password,
+    options: { data: { nickname } },
   })
 
   if (error) return { error: error.message }
@@ -42,9 +59,9 @@ export async function register(
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: data.user.id, nickname, email: formData.get('email') as string })
+    .upsert({ id: data.user.id, nickname, email })
 
-  if (profileError) return { error: profileError.message }
+  if (profileError && data.session) return { error: profileError.message }
 
   // Create the shared public ledger if it doesn't exist yet
   const { count } = await supabase
@@ -53,9 +70,10 @@ export async function register(
     .eq('is_public', true)
 
   if (!count) {
-    await supabase
+    const { error: ledgerError } = await supabase
       .from('ledgers')
       .insert({ name: '作伙帳本', owner_id: data.user.id, is_public: true })
+    if (ledgerError && ledgerError.code !== '23505') return { error: ledgerError.message }
   }
 
   revalidatePath('/', 'layout')

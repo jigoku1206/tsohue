@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { normalizeImportRow, parseLedgerId } from '@/lib/validation'
 
 export type ImportRow = {
   date: string
@@ -28,27 +29,31 @@ export async function importTransactions(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { imported: 0, error: '未登入' }
 
-  if (ledgerId) {
+  const normalizedLedgerId = parseLedgerId(ledgerId)
+  if (ledgerId && !normalizedLedgerId) {
+    return { imported: 0, error: '帳本格式不正確' }
+  }
+
+  if (normalizedLedgerId) {
     const { data: ledger } = await supabase
       .from('ledgers')
       .select('id')
-      .eq('id', ledgerId)
-      .or(`owner_id.eq.${user.id},is_public.eq.true`)
+      .eq('id', normalizedLedgerId)
       .maybeSingle()
     if (!ledger) return { imported: 0, error: '無此帳本的匯入權限' }
   }
 
-  const inserts = rows.map((row) => ({
+  const normalized = []
+  for (const row of rows) {
+    const parsed = normalizeImportRow(row)
+    if (!parsed.ok) return { imported: 0, error: parsed.error }
+    normalized.push(parsed.value)
+  }
+
+  const inserts = normalized.map((row) => ({
     user_id: user.id,
-    ledger_id: ledgerId ?? null,
-    date: row.date,
-    amount: row.amount,
-    currency: row.currency || 'TWD',
-    exchange_rate: row.exchange_rate || 1,
-    category: row.category,
-    subcategory: row.subcategory || null,
-    paid_by: row.paid_by || '',
-    note: row.note || null,
+    ledger_id: normalizedLedgerId,
+    ...row,
   }))
 
   const { error } = await supabase.from('transactions').insert(inserts)

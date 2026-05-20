@@ -51,14 +51,22 @@ export function CalendarView({
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
-  const [selectedDay, setSelectedDay] = useState(isCurrentMonth ? today.getDate() : 1)
-
-  // Reset selected day when navigating to a different month
-  useEffect(() => {
-    const now = new Date()
-    const nowIsCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
-    setSelectedDay(nowIsCurrentMonth ? now.getDate() : 1)
-  }, [year, month])
+  const monthKey = `${year}-${month}`
+  const defaultSelectedDay = isCurrentMonth ? today.getDate() : 1
+  const [selectedDayState, setSelectedDayState] = useState({
+    key: monthKey,
+    day: defaultSelectedDay,
+  })
+  const selectedDay = selectedDayState.key === monthKey
+    ? selectedDayState.day
+    : defaultSelectedDay
+  function setSelectedDay(next: SetStateAction<number>) {
+    setSelectedDayState((prev) => {
+      const current = prev.key === monthKey ? prev.day : defaultSelectedDay
+      const day = typeof next === 'function' ? next(current) : next
+      return { key: monthKey, day }
+    })
+  }
 
   const listRef = useRef<HTMLDivElement>(null)
   const lastScrollTop = useRef(0)

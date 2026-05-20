@@ -25,6 +25,34 @@ alter table public.transactions add column if not exists recurring_id uuid;
 
 alter table public.transactions enable row level security;
 
+-- ─── Ledgers ─────────────────────────────────────────────────────────────────
+
+create table if not exists public.ledgers (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  owner_id   uuid not null references auth.users(id) on delete cascade,
+  is_public  boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.ledgers add column if not exists default_currency text not null default 'TWD';
+
+create unique index if not exists one_public_ledger_idx
+  on public.ledgers(is_public) where is_public = true;
+
+alter table public.ledgers enable row level security;
+
+-- ─── Ledger members ──────────────────────────────────────────────────────────
+
+create table if not exists public.ledger_members (
+  ledger_id  uuid not null references public.ledgers(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (ledger_id, user_id)
+);
+
+alter table public.ledger_members enable row level security;
+
 -- ─── Recurring rules ──────────────────────────────────────────────────────────
 
 create table if not exists public.recurring_rules (
@@ -51,8 +79,16 @@ create policy "recurring_rules_all" on public.recurring_rules
   for all using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Clear orphaned recurring_id values (no matching rule row), then add FK
-update public.transactions set recurring_id = null where recurring_id is not null;
+-- Clear only orphaned recurring_id values (no matching rule row), then add FK.
+-- Do not clear valid recurring links when this bootstrap file is re-run.
+update public.transactions t
+set recurring_id = null
+where recurring_id is not null
+  and not exists (
+    select 1
+    from public.recurring_rules r
+    where r.id = t.recurring_id
+  );
 
 alter table public.transactions
   drop constraint if exists transactions_recurring_id_fkey;
@@ -98,42 +134,68 @@ alter table public.profiles add column if not exists categories_seeded boolean d
 
 alter table public.profiles enable row level security;
 
+create or replace function public.is_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce(is_admin, false) from public.profiles where id = auth.uid()
+$$;
+
 drop policy if exists "users_read_all_profiles" on public.profiles;
-create policy "users_read_all_profiles" on public.profiles
-  for select using (auth.role() = 'authenticated');
+drop policy if exists "profiles_select_limited" on public.profiles;
+create policy "profiles_select_limited" on public.profiles
+  for select to authenticated using (
+    id = auth.uid()
+    or public.is_admin()
+    or exists (
+      select 1
+      from public.ledgers l
+      join public.ledger_members m on m.ledger_id = l.id
+      where m.user_id = profiles.id
+        and l.owner_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.ledger_members mine
+      join public.ledger_members theirs on theirs.ledger_id = mine.ledger_id
+      where mine.user_id = auth.uid()
+        and theirs.user_id = profiles.id
+    )
+  );
 
 drop policy if exists "users_manage_own_profile" on public.profiles;
 create policy "users_manage_own_profile" on public.profiles
   for all using (auth.uid() = id)
   with check (auth.uid() = id);
 
--- ─── Ledgers ─────────────────────────────────────────────────────────────────
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, nickname, email)
+  values (
+    new.id,
+    coalesce(nullif(new.raw_user_meta_data ->> 'nickname', ''), split_part(new.email, '@', 1)),
+    new.email
+  )
+  on conflict (id) do update
+    set email = excluded.email,
+        updated_at = now();
+  return new;
+end;
+$$;
 
-create table if not exists public.ledgers (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null,
-  owner_id   uuid not null references auth.users(id) on delete cascade,
-  is_public  boolean not null default false,
-  created_at timestamptz not null default now()
-);
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
-alter table public.ledgers add column if not exists default_currency text not null default 'TWD';
-
-create unique index if not exists one_public_ledger_idx
-  on public.ledgers(is_public) where is_public = true;
-
-alter table public.ledgers enable row level security;
-
--- ─── Ledger members ──────────────────────────────────────────────────────────
-
-create table if not exists public.ledger_members (
-  ledger_id  uuid not null references public.ledgers(id) on delete cascade,
-  user_id    uuid not null references auth.users(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (ledger_id, user_id)
-);
-
-alter table public.ledger_members enable row level security;
+create or replace function public.find_profile_by_email(p_email text)
+returns table(id uuid, nickname text, email text)
+language sql security definer stable set search_path = public as $$
+  select p.id, p.nickname, p.email
+  from public.profiles p
+  where lower(p.email) = lower(trim(p_email))
+    and auth.role() = 'authenticated'
+  limit 1
+$$;
 
 -- ─── Security-definer helpers (break circular RLS references) ────────────────
 
@@ -147,16 +209,43 @@ returns setof uuid language sql security definer stable set search_path = public
   select id from public.ledgers where owner_id = auth.uid()
 $$;
 
-create or replace function public.is_admin()
+create or replace function public.can_read_ledger(p_ledger_id uuid)
 returns boolean language sql security definer stable set search_path = public as $$
-  select coalesce(is_admin, false) from public.profiles where id = auth.uid()
+  select exists (
+    select 1 from public.ledgers l
+    where l.id = p_ledger_id
+      and (
+        l.is_public = true
+        or l.owner_id = auth.uid()
+        or exists (
+          select 1 from public.ledger_members m
+          where m.ledger_id = p_ledger_id and m.user_id = auth.uid()
+        )
+      )
+  )
+$$;
+
+create or replace function public.can_write_ledger(p_ledger_id uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.ledgers l
+    where l.id = p_ledger_id
+      and (
+        l.is_public = true
+        or l.owner_id = auth.uid()
+        or exists (
+          select 1 from public.ledger_members m
+          where m.ledger_id = p_ledger_id and m.user_id = auth.uid()
+        )
+      )
+  )
 $$;
 
 -- ─── Ledger policies ─────────────────────────────────────────────────────────
 
 drop policy if exists "ledgers_select" on public.ledgers;
 create policy "ledgers_select" on public.ledgers
-  for select using (
+  for select to authenticated using (
     is_public = true
     or owner_id = auth.uid()
     or id in (select get_accessible_ledger_ids())
@@ -164,28 +253,29 @@ create policy "ledgers_select" on public.ledgers
 
 drop policy if exists "ledgers_insert" on public.ledgers;
 create policy "ledgers_insert" on public.ledgers
-  for insert with check (auth.uid() = owner_id);
+  for insert to authenticated with check (auth.uid() = owner_id);
 
 drop policy if exists "ledgers_update" on public.ledgers;
 create policy "ledgers_update" on public.ledgers
-  for update using (auth.uid() = owner_id and is_public = false);
+  for update to authenticated using (auth.uid() = owner_id and is_public = false)
+  with check (auth.uid() = owner_id and is_public = false);
 
 drop policy if exists "ledgers_delete" on public.ledgers;
 create policy "ledgers_delete" on public.ledgers
-  for delete using (auth.uid() = owner_id and is_public = false);
+  for delete to authenticated using (auth.uid() = owner_id and is_public = false);
 
 -- ─── Ledger member policies ───────────────────────────────────────────────────
 
 drop policy if exists "ledger_members_select" on public.ledger_members;
 create policy "ledger_members_select" on public.ledger_members
-  for select using (
+  for select to authenticated using (
     user_id = auth.uid()
     or ledger_id in (select get_owned_ledger_ids())
   );
 
 drop policy if exists "ledger_members_insert" on public.ledger_members;
 create policy "ledger_members_insert" on public.ledger_members
-  for insert with check (
+  for insert to authenticated with check (
     ledger_id in (
       select id from public.ledgers
       where owner_id = auth.uid() and is_public = false
@@ -194,7 +284,7 @@ create policy "ledger_members_insert" on public.ledger_members
 
 drop policy if exists "ledger_members_delete" on public.ledger_members;
 create policy "ledger_members_delete" on public.ledger_members
-  for delete using (
+  for delete to authenticated using (
     ledger_id in (select get_owned_ledger_ids())
   );
 
@@ -211,35 +301,44 @@ drop policy if exists "transactions_select" on public.transactions;
 drop policy if exists "transactions_insert" on public.transactions;
 
 create policy "transactions_select" on public.transactions
-  for select using (
-    ledger_id is null
-    or ledger_id in (
-      select id from public.ledgers
-      where is_public = true
-        or owner_id = auth.uid()
-        or id in (select ledger_id from public.ledger_members where user_id = auth.uid())
-    )
+  for select to authenticated using (
+    (ledger_id is null and user_id = auth.uid())
+    or public.can_read_ledger(ledger_id)
   );
 
 create policy "transactions_insert" on public.transactions
-  for insert with check (
+  for insert to authenticated with check (
     auth.uid() = user_id
     and (
       ledger_id is null
-      or ledger_id in (
-        select id from public.ledgers
-        where is_public = true
-           or owner_id = auth.uid()
-           or id in (select get_accessible_ledger_ids())
-      )
+      or public.can_write_ledger(ledger_id)
     )
   );
 
 create policy "users_can_update_own" on public.transactions
-  for update using (auth.uid() = user_id or public.is_admin());
+  for update to authenticated using (
+    public.is_admin()
+    or (
+      auth.uid() = user_id
+      and (ledger_id is null or public.can_write_ledger(ledger_id))
+    )
+  )
+  with check (
+    public.is_admin()
+    or (
+      auth.uid() = user_id
+      and (ledger_id is null or public.can_write_ledger(ledger_id))
+    )
+  );
 
 create policy "users_can_delete_own" on public.transactions
-  for delete using (auth.uid() = user_id or public.is_admin());
+  for delete to authenticated using (
+    public.is_admin()
+    or (
+      auth.uid() = user_id
+      and (ledger_id is null or public.can_write_ledger(ledger_id))
+    )
+  );
 
 -- ─── App settings ─────────────────────────────────────────────────────────────
 -- Must come after is_admin() is defined above.
@@ -288,15 +387,15 @@ alter table public.ledger_budgets enable row level security;
 
 drop policy if exists "ledger_budgets_select" on public.ledger_budgets;
 create policy "ledger_budgets_select" on public.ledger_budgets
-  for select using (
-    ledger_id in (
-      select id from public.ledgers
-      where is_public or owner_id = auth.uid()
-         or id in (select ledger_id from public.ledger_members where user_id = auth.uid())
-    )
+  for select to authenticated using (
+    public.can_read_ledger(ledger_id)
   );
 
 drop policy if exists "ledger_budgets_write" on public.ledger_budgets;
 create policy "ledger_budgets_write" on public.ledger_budgets
-  for all using (ledger_id in (select id from public.ledgers where owner_id = auth.uid()))
-  with check (ledger_id in (select id from public.ledgers where owner_id = auth.uid()));
+  for all to authenticated using (
+    ledger_id in (select id from public.ledgers where owner_id = auth.uid())
+  )
+  with check (
+    ledger_id in (select id from public.ledgers where owner_id = auth.uid())
+  );

@@ -49,7 +49,7 @@ export function MonthController({
       const b = bs.find((b) => b.category === null)
       setTotalBudget(b?.monthly_limit ?? null)
     })
-  }, [ledgerId, initialTransactions])
+  }, [getLedgerBudgets, ledgerId, initialTransactions])
 
   // Fetch ledger members for the paid-by select in AddTransactionDialog
   useEffect(() => {
@@ -57,7 +57,7 @@ export function MonthController({
     getLedgerMembers(ledgerId).then((members) => {
       setLedgerMembers(members.map((m) => ({ id: m.user_id, nickname: m.nickname })))
     })
-  }, [ledgerId])
+  }, [getLedgerMembers, ledgerId])
 
   function navigateTo(y: number, m: number) {
     startTransition(async () => {

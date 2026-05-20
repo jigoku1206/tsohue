@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,8 +42,8 @@ export function AddTransactionDialog({
 }) {
   const { addTransaction, createRecurringRule, fetchExchangeRates } = useActions()
 
-  const resolveCurrency = (c?: string): CurrencyCode =>
-    (CURRENCIES.find((x) => x.code === c)?.code ?? 'TWD') as CurrencyCode
+  const resolveCurrency = useCallback((c?: string): CurrencyCode =>
+    (CURRENCIES.find((x) => x.code === c)?.code ?? 'TWD') as CurrencyCode, [])
 
   // When ledger has members (shared ledger), use a controlled paidBy state
   const showMemberSelect = !!(ledgerId && ledgerMembers && ledgerMembers.length > 1)
@@ -59,37 +59,32 @@ export function AddTransactionDialog({
   const [recurringFrequency, setRecurringFrequency] = useState<'monthly' | 'weekly'>('monthly')
   const [recurringCount, setRecurringCount] = useState('3')
 
-  // Sync currency when ledger changes (only while dialog is closed)
-  useEffect(() => {
-    if (!open) setCurrency(resolveCurrency(defaultCurrency))
-  }, [defaultCurrency, open])
   const [selectedDate, setSelectedDate] = useState(defaultDate ?? today())
-  const [rates, setRates] = useState<ExchangeRates>({})
-  const [loadingRates, setLoadingRates] = useState(false)
+  const [rateState, setRateState] = useState<{ key: string; rates: ExchangeRates } | null>(null)
 
   const selectedCategory = categories.find((c) => c.name === categoryName)
   const subcategories = selectedCategory?.subcategories ?? []
   const isFuture = selectedDate > today()
+  const rateKey = `${selectedDate}:${currency}`
+  const rates = rateState?.key === rateKey ? rateState.rates : {}
   const currentRate = currency === 'TWD' ? 1 : (rates[currency] ?? null)
+  const loadingRates = currency !== 'TWD' && rateState?.key !== rateKey
   const currencyMeta = CURRENCIES.find((c) => c.code === currency)!
-
-  // Reset date when defaultDate changes (user picks a different calendar day)
-  useEffect(() => {
-    setSelectedDate(defaultDate ?? today())
-  }, [defaultDate])
 
   // Fetch rates when dialog opens, date changes, or non-TWD currency selected
   useEffect(() => {
     if (!open || currency === 'TWD') {
-      setRates({})
       return
     }
-    setLoadingRates(true)
+    let cancelled = false
     fetchExchangeRates(selectedDate).then((r) => {
-      setRates(r)
-      setLoadingRates(false)
+      if (cancelled) return
+      setRateState({ key: rateKey, rates: r })
     })
-  }, [open, selectedDate, currency])
+    return () => {
+      cancelled = true
+    }
+  }, [currency, fetchExchangeRates, open, rateKey, selectedDate])
 
   function handleCategoryChange(v: string | null) {
     setCategoryName(v ?? '')
@@ -105,8 +100,8 @@ export function AddTransactionDialog({
     setIsRecurring(false)
     setRecurringFrequency('monthly')
     setRecurringCount('3')
-    // currency will be reset by the useEffect above when open becomes false
-    setRates({})
+    // currency is reset when the dialog opens for a new entry
+    setRateState(null)
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -150,7 +145,11 @@ export function AddTransactionDialog({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ 新增記錄</Button>
+      <Button onClick={() => {
+        setSelectedDate(defaultDate ?? today())
+        setCurrency(resolveCurrency(defaultCurrency))
+        setOpen(true)
+      }}>+ 新增記錄</Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
         <DialogContent className="flex flex-col max-h-[90dvh]">
