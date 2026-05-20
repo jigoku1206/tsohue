@@ -64,27 +64,31 @@ const DEFAULT_CATEGORIES: { name: string; subs: string[] }[] = [
 ]
 
 // Additive sync: insert any default top-level categories (and their subs) not yet present for this user.
+// Uses 2 batch inserts instead of N+1 sequential calls.
 async function ensureDefaults(userId: string, existingNames: Set<string>) {
   const supabase = await createClient()
   const missing = DEFAULT_CATEGORIES.filter((d) => !existingNames.has(d.name))
   if (missing.length === 0) return
 
-  for (let pi = 0; pi < missing.length; pi++) {
-    const { name, subs } = missing[pi]
-    const { data: parent } = await supabase
-      .from('categories')
-      .insert({ user_id: userId, name, position: 100 + pi })
-      .select('id')
-      .single()
-    if (!parent) continue
-    for (let si = 0; si < subs.length; si++) {
-      await supabase.from('categories').insert({
-        user_id: userId,
-        name: subs[si],
-        parent_id: parent.id,
-        position: si,
-      })
-    }
+  const { data: parents } = await supabase
+    .from('categories')
+    .insert(missing.map((d, i) => ({ user_id: userId, name: d.name, position: 100 + i })))
+    .select('id, name')
+
+  if (!parents?.length) return
+
+  const allSubs = parents.flatMap((p) => {
+    const def = DEFAULT_CATEGORIES.find((d) => d.name === p.name)
+    return (def?.subs ?? []).map((name, i) => ({
+      user_id: userId,
+      name,
+      parent_id: p.id,
+      position: i,
+    }))
+  })
+
+  if (allSubs.length > 0) {
+    await supabase.from('categories').insert(allSubs)
   }
 }
 
@@ -185,13 +189,11 @@ export async function updateCategoryPositions(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: '未登入' }
 
-  for (const { id, position } of updates) {
-    await supabase
-      .from('categories')
-      .update({ position })
-      .eq('id', id)
-      .eq('user_id', user.id)
-  }
+  await Promise.all(
+    updates.map(({ id, position }) =>
+      supabase.from('categories').update({ position }).eq('id', id).eq('user_id', user.id)
+    )
+  )
 
   revalidatePath('/dashboard')
   return {}
