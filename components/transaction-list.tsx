@@ -137,7 +137,7 @@ export function TransactionList({
                     </span>
                   )}
                   {tx.recurring_id && (
-                    <span className="text-xs text-muted-foreground" title="週期消費">↻</span>
+                    <span className="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium" title="週期消費">↻ 週期</span>
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground truncate">
@@ -188,7 +188,7 @@ export function TransactionList({
               {detail.note && <DetailRow label="備註" value={detail.note} />}
               {detail.recurring_id && (
                 <DetailRow label="類型" value={
-                  <span className="text-xs text-muted-foreground">↻ 週期消費</span>
+                  <span className="text-xs bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">↻ 週期消費</span>
                 } />
               )}
             </div>
