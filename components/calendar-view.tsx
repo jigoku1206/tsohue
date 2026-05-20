@@ -268,7 +268,7 @@ export function CalendarView({
           <button
             onClick={() => setSelectedDay((d) => Math.max(1, d - 1))}
             disabled={selectedDay === 1}
-            className="p-1 rounded-md hover:bg-muted/50 transition-colors disabled:opacity-30"
+            className="p-2.5 rounded-md hover:bg-muted/50 transition-colors disabled:opacity-30"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -294,7 +294,7 @@ export function CalendarView({
           <button
             onClick={() => setSelectedDay((d) => Math.min(daysInMonth, d + 1))}
             disabled={selectedDay === daysInMonth}
-            className="p-1 rounded-md hover:bg-muted/50 transition-colors disabled:opacity-30"
+            className="p-2.5 rounded-md hover:bg-muted/50 transition-colors disabled:opacity-30"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
