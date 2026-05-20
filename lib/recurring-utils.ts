@@ -1,7 +1,7 @@
 export function addMonths(dateStr: string, n: number): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   const year = y + Math.floor((m - 1 + n) / 12)
-  const month = ((m - 1 + n) % 12) + 1
+  const month = (((m - 1 + n) % 12) + 12) % 12 + 1
   const lastDay = new Date(year, month, 0).getDate()
   const day = Math.min(d, lastDay)
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
