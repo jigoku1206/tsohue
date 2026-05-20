@@ -8,12 +8,14 @@ export function MonthPicker({
   year,
   month,
   ledgerId,
+  isPending,
   onNavigate,
   onNavigateToToday,
 }: {
   year: number
   month: number
   ledgerId?: string
+  isPending?: boolean
   onNavigate?: (deltaMonths: number) => void
   onNavigateToToday?: () => void
 }) {
@@ -50,18 +52,19 @@ export function MonthPicker({
   }).format(new Date(year, month - 1, 1))
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 w-8 p-0">
+    <div className={`flex items-center gap-2 transition-opacity${isPending ? ' opacity-50' : ''}`}>
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 w-8 p-0" disabled={isPending}>
         <ChevronLeftIcon className="size-4" />
       </Button>
       <div className="flex flex-col items-center gap-0.5">
         <button
           onClick={handleLabelClick}
-          className={`text-sm font-medium w-24 text-center leading-none ${!isCurrentMonth ? 'cursor-pointer hover:text-primary' : 'cursor-default'}`}
+          disabled={isPending}
+          className={`text-sm font-medium w-24 text-center leading-none ${!isCurrentMonth && !isPending ? 'cursor-pointer hover:text-primary' : 'cursor-default'}`}
         >
           {label}
         </button>
-        {!isCurrentMonth && (
+        {!isCurrentMonth && !isPending && (
           <button
             onClick={handleLabelClick}
             className="text-[10px] text-primary hover:underline leading-none"
@@ -75,6 +78,7 @@ export function MonthPicker({
         size="sm"
         onClick={() => navigate(1)}
         className="h-8 w-8 p-0"
+        disabled={isPending}
       >
         <ChevronRightIcon className="size-4" />
       </Button>

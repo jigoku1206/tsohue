@@ -94,6 +94,7 @@ export function MonthController({
         <MonthPicker
           year={year}
           month={month}
+          isPending={isPending}
           onNavigate={handleNavigate}
           onNavigateToToday={handleNavigateToToday}
         />
