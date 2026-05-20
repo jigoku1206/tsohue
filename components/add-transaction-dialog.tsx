@@ -280,6 +280,12 @@ export function AddTransactionDialog({
               <Label htmlFor="note">備註</Label>
               <Input id="note" name="note" placeholder="（選填）" />
             </div>
+            {!loading && (() => {
+              if (!categoryName) return <p className="text-xs text-destructive -mt-2">請先選擇類別</p>
+              if (!amount || amount === '0') return <p className="text-xs text-destructive -mt-2">請輸入金額</p>
+              if (currency !== 'TWD' && loadingRates) return <p className="text-xs text-muted-foreground -mt-2">匯率載入中，請稍候…</p>
+              return null
+            })()}
             <Button
               type="submit"
               disabled={loading || !categoryName || !amount || amount === '0' || (currency !== 'TWD' && (loadingRates || !currentRate))}
