@@ -206,6 +206,7 @@ export function DemoDashboard() {
           isAdmin
           onJumpToToday={handleNavigateToToday}
           onRefresh={handleRefresh}
+          ledgerMembers={[{ id: DEMO_USER_ID, nickname: state.profile.nickname }]}
         />
       </div>
     </ActionsContext.Provider>

@@ -32,6 +32,7 @@ export function CalendarView({
   onToggleCalendar,
   onJumpToToday,
   onRefresh,
+  ledgerMembers,
 }: {
   year: number
   month: number
@@ -46,6 +47,7 @@ export function CalendarView({
   onToggleCalendar: Dispatch<SetStateAction<boolean>>
   onJumpToToday?: () => void
   onRefresh?: () => Promise<void>
+  ledgerMembers?: { id: string; nickname: string }[]
 }) {
   const today = new Date()
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
@@ -305,6 +307,7 @@ export function CalendarView({
           defaultDate={`${year}-${String(month).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`}
           ledgerId={ledgerId}
           defaultCurrency={defaultCurrency}
+          ledgerMembers={ledgerMembers}
         />
       </div>
 

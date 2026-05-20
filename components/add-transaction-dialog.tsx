@@ -31,17 +31,23 @@ export function AddTransactionDialog({
   defaultDate,
   ledgerId,
   defaultCurrency,
+  ledgerMembers,
 }: {
   userNickname: string
   categories: Category[]
   defaultDate?: string
   ledgerId?: string
   defaultCurrency?: string
+  ledgerMembers?: { id: string; nickname: string }[]
 }) {
   const { addTransaction, createRecurringRule, fetchExchangeRates } = useActions()
 
   const resolveCurrency = (c?: string): CurrencyCode =>
     (CURRENCIES.find((x) => x.code === c)?.code ?? 'TWD') as CurrencyCode
+
+  // When ledger has members (shared ledger), use a controlled paidBy state
+  const showMemberSelect = !!(ledgerId && ledgerMembers && ledgerMembers.length > 1)
+  const [paidBy, setPaidBy] = useState(userNickname)
 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -95,6 +101,7 @@ export function AddTransactionDialog({
     setAmount('0')
     setCategoryName('')
     setSubcategoryName('')
+    setPaidBy(userNickname)
     setIsRecurring(false)
     setRecurringFrequency('monthly')
     setRecurringCount('3')
@@ -116,6 +123,7 @@ export function AddTransactionDialog({
     formData.set('exchange_rate', String(currentRate ?? 1))
     if (ledgerId) formData.set('ledger_id', ledgerId)
     formData.set('amount', amount)
+    if (showMemberSelect) formData.set('paid_by', paidBy)
 
     if (isRecurring) {
       formData.set('recurring_frequency', recurringFrequency)
@@ -274,7 +282,20 @@ export function AddTransactionDialog({
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="paid_by">付款人</Label>
-              <Input id="paid_by" name="paid_by" defaultValue={userNickname} required />
+              {showMemberSelect ? (
+                <Select value={paidBy} onValueChange={(v) => { if (v) setPaidBy(v) }}>
+                  <SelectTrigger id="paid_by">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ledgerMembers!.map((m) => (
+                      <SelectItem key={m.id} value={m.nickname}>{m.nickname}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input id="paid_by" name="paid_by" defaultValue={userNickname} required />
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="note">備註</Label>

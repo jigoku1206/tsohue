@@ -29,12 +29,13 @@ export function MonthController({
   defaultCurrency?: string
   isAdmin?: boolean
 }) {
-  const { getLedgerBudgets } = useActions()
+  const { getLedgerBudgets, getLedgerMembers } = useActions()
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [transactions, setTransactions] = useState(initialTransactions)
   const [isPending, startTransition] = useTransition()
   const [totalBudget, setTotalBudget] = useState<number | null>(null)
+  const [ledgerMembers, setLedgerMembers] = useState<{ id: string; nickname: string }[]>([])
 
   // Sync transactions when server revalidates (e.g. after add/edit/delete)
   useEffect(() => {
@@ -49,6 +50,14 @@ export function MonthController({
       setTotalBudget(b?.monthly_limit ?? null)
     })
   }, [ledgerId, initialTransactions])
+
+  // Fetch ledger members for the paid-by select in AddTransactionDialog
+  useEffect(() => {
+    if (!ledgerId) { setLedgerMembers([]); return }
+    getLedgerMembers(ledgerId).then((members) => {
+      setLedgerMembers(members.map((m) => ({ id: m.user_id, nickname: m.nickname })))
+    })
+  }, [ledgerId])
 
   function navigateTo(y: number, m: number) {
     startTransition(async () => {
@@ -134,6 +143,7 @@ export function MonthController({
         isAdmin={isAdmin}
         onJumpToToday={handleNavigateToToday}
         onRefresh={handleRefresh}
+        ledgerMembers={ledgerMembers}
       />
     </div>
   )

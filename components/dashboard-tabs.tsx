@@ -22,6 +22,7 @@ export function DashboardTabs({
   isAdmin,
   onJumpToToday,
   onRefresh,
+  ledgerMembers,
 }: {
   year: number
   month: number
@@ -34,6 +35,7 @@ export function DashboardTabs({
   isAdmin?: boolean
   onJumpToToday?: () => void
   onRefresh?: () => Promise<void>
+  ledgerMembers?: { id: string; nickname: string }[]
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
   const [calendarOpen, setCalendarOpen] = useState(true)
@@ -102,6 +104,7 @@ export function DashboardTabs({
               onToggleCalendar={setCalendarOpen}
               onJumpToToday={onJumpToToday}
               onRefresh={onRefresh}
+              ledgerMembers={ledgerMembers}
             />
           </ErrorBoundary>
         ) : (
