@@ -69,7 +69,7 @@ export function ProfileDialog({
 
   return (
     <>
-      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label="個人資料">
+      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label="個人資料" title="個人資料">
         <UserCircle className="h-5 w-5" />
       </Button>
 

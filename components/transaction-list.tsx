@@ -107,9 +107,7 @@ export function TransactionList({
 
   if (transactions.length === 0) {
     return (
-      <p className="text-center text-muted-foreground py-12">
-        還沒有記錄，點擊「新增記錄」開始記帳！
-      </p>
+      <p className="text-center text-muted-foreground py-12">本日無消費記錄</p>
     )
   }
 
