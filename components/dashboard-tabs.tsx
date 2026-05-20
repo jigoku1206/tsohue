@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { CalendarDays, BarChart2, ChevronUp, ChevronDown } from 'lucide-react'
 import { CalendarView } from '@/components/calendar-view'
 import { ReportView } from '@/components/report-view'
+import { ErrorBoundary } from '@/components/error-boundary'
 import type { Transaction } from '@/app/actions/transactions'
 import type { Category } from '@/app/actions/categories'
 
@@ -86,29 +87,33 @@ export function DashboardTabs({
 
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {tab === 'calendar' ? (
-          <CalendarView
-            year={year}
-            month={month}
-            transactions={transactions}
-            categories={categories}
-            currentUserId={currentUserId}
-            userNickname={userNickname}
-            ledgerId={ledgerId}
-            defaultCurrency={defaultCurrency}
-            isAdmin={isAdmin}
-            calendarOpen={calendarOpen}
-            onToggleCalendar={setCalendarOpen}
-            onJumpToToday={onJumpToToday}
-            onRefresh={onRefresh}
-          />
+          <ErrorBoundary>
+            <CalendarView
+              year={year}
+              month={month}
+              transactions={transactions}
+              categories={categories}
+              currentUserId={currentUserId}
+              userNickname={userNickname}
+              ledgerId={ledgerId}
+              defaultCurrency={defaultCurrency}
+              isAdmin={isAdmin}
+              calendarOpen={calendarOpen}
+              onToggleCalendar={setCalendarOpen}
+              onJumpToToday={onJumpToToday}
+              onRefresh={onRefresh}
+            />
+          </ErrorBoundary>
         ) : (
-          <ReportView
-            year={year}
-            month={month}
-            transactions={transactions}
-            categories={categories}
-            ledgerId={ledgerId}
-          />
+          <ErrorBoundary>
+            <ReportView
+              year={year}
+              month={month}
+              transactions={transactions}
+              categories={categories}
+              ledgerId={ledgerId}
+            />
+          </ErrorBoundary>
         )}
       </div>
     </div>
