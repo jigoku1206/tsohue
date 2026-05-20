@@ -58,18 +58,39 @@ export async function updateLedger(
   defaultCurrency?: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '未登入' }
+
   const update: Record<string, string> = { name }
   if (defaultCurrency) update.default_currency = defaultCurrency
-  const { error } = await supabase.from('ledgers').update(update).eq('id', id)
+
+  const { data, error } = await supabase
+    .from('ledgers')
+    .update(update)
+    .eq('id', id)
+    .eq('owner_id', user.id)
+    .select('id')
+
   if (error) return { error: error.message }
+  if (!data?.length) return { error: '找不到帳本或無修改權限' }
   revalidatePath('/dashboard')
   return {}
 }
 
 export async function deleteLedger(id: string): Promise<{ error?: string }> {
   const supabase = await createClient()
-  const { error } = await supabase.from('ledgers').delete().eq('id', id)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '未登入' }
+
+  const { data, error } = await supabase
+    .from('ledgers')
+    .delete()
+    .eq('id', id)
+    .eq('owner_id', user.id)
+    .select('id')
+
   if (error) return { error: error.message }
+  if (!data?.length) return { error: '找不到帳本或無刪除權限' }
   revalidatePath('/dashboard')
   return {}
 }
