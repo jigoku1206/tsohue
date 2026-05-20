@@ -43,8 +43,15 @@ export function DemoDashboard() {
 
   const actions = useMemo(() => createDemoActions(setState, () => stateRef.current), [])
 
+  // Track which (year, month, ledgerId) combos have already been processed so
+  // rapid month navigation doesn't re-run the idempotent generation unnecessarily.
+  const processedMonths = useRef(new Set<string>())
+
   // Lazy-generate recurring transactions whenever month/ledger changes
   useEffect(() => {
+    const key = `${year}-${month}-${currentLedgerId ?? 'null'}`
+    if (processedMonths.current.has(key)) return
+    processedMonths.current.add(key)
     setState((prev) => {
       const ledgerId = currentLedgerId ?? (prev.ledgers.find((l) => l.is_public)?.id ?? null)
       return demoEnsureRecurringForMonth(prev, year, month, ledgerId)
