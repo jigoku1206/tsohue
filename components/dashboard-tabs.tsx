@@ -23,6 +23,7 @@ export function DashboardTabs({
   onJumpToToday,
   onRefresh,
   ledgerMembers,
+  isLoading,
 }: {
   year: number
   month: number
@@ -36,6 +37,7 @@ export function DashboardTabs({
   onJumpToToday?: () => void
   onRefresh?: () => Promise<void>
   ledgerMembers?: { id: string; nickname: string }[]
+  isLoading?: boolean
 }) {
   const [tab, setTab] = useState<Tab>('calendar')
   const [calendarOpen, setCalendarOpen] = useState(true)
@@ -88,7 +90,22 @@ export function DashboardTabs({
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        {tab === 'calendar' ? (
+        {isLoading ? (
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="rounded-xl border bg-card p-3">
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 35 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-md bg-muted animate-pulse" />
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />
+              ))}
+            </div>
+          </div>
+        ) : tab === 'calendar' ? (
           <ErrorBoundary>
             <CalendarView
               year={year}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { MonthPicker } from '@/components/month-picker'
 import { DashboardTabs } from '@/components/dashboard-tabs'
@@ -9,65 +9,72 @@ import type { Category } from '@/app/actions/categories'
 import { useActions } from '@/lib/actions-context'
 
 export function MonthController({
-  initialYear,
-  initialMonth,
-  initialTransactions,
+  year,
+  month,
   categories,
   currentUserId,
   userNickname,
   ledgerId,
   defaultCurrency,
   isAdmin,
+  onDateChange,
 }: {
-  initialYear: number
-  initialMonth: number
-  initialTransactions: Transaction[]
+  year: number
+  month: number
   categories: Category[]
   currentUserId: string
   userNickname: string
   ledgerId?: string
   defaultCurrency?: string
   isAdmin?: boolean
+  onDateChange: (year: number, month: number) => void
 }) {
   const { getLedgerBudgets, getLedgerMembers } = useActions()
-  const [year, setYear] = useState(initialYear)
-  const [month, setMonth] = useState(initialMonth)
-  const [transactions, setTransactions] = useState(initialTransactions)
-  const [isPending, startTransition] = useTransition()
-  const [totalBudget, setTotalBudget] = useState<number | null>(null)
-  const [ledgerMembers, setLedgerMembers] = useState<{ id: string; nickname: string }[]>([])
+  const targetKey = `${ledgerId ?? 'none'}:${year}:${month}`
+  const [transactionsState, setTransactionsState] = useState<{
+    key: string
+    transactions: Transaction[]
+  }>({ key: '', transactions: [] })
+  const [budgetState, setBudgetState] = useState<{
+    key: string
+    totalBudget: number | null
+  }>({ key: '', totalBudget: null })
+  const [membersState, setMembersState] = useState<{
+    key: string
+    members: { id: string; nickname: string }[]
+  }>({ key: '', members: [] })
+  const [refreshNonce, setRefreshNonce] = useState(0)
 
-  // Sync transactions when server revalidates (e.g. after add/edit/delete)
   useEffect(() => {
-    setTransactions(initialTransactions)
-  }, [initialTransactions])
+    let cancelled = false
+    getTransactions(year, month, ledgerId).then((transactions) => {
+      if (!cancelled) setTransactionsState({ key: targetKey, transactions })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [ledgerId, month, refreshNonce, targetKey, year])
 
-  // Re-fetch total budget when ledger changes or server revalidates
   useEffect(() => {
     if (!ledgerId) return
     getLedgerBudgets(ledgerId).then((bs) => {
       const b = bs.find((b) => b.category === null)
-      setTotalBudget(b?.monthly_limit ?? null)
+      setBudgetState({ key: ledgerId, totalBudget: b?.monthly_limit ?? null })
     })
-  }, [getLedgerBudgets, ledgerId, initialTransactions])
+  }, [getLedgerBudgets, ledgerId, refreshNonce])
 
-  // Fetch ledger members for the paid-by select in AddTransactionDialog
   useEffect(() => {
-    if (!ledgerId) { setLedgerMembers([]); return }
+    if (!ledgerId) return
     getLedgerMembers(ledgerId).then((members) => {
-      setLedgerMembers(members.map((m) => ({ id: m.user_id, nickname: m.nickname })))
+      setMembersState({
+        key: ledgerId,
+        members: members.map((m) => ({ id: m.user_id, nickname: m.nickname })),
+      })
     })
   }, [getLedgerMembers, ledgerId])
 
   function navigateTo(y: number, m: number) {
-    startTransition(async () => {
-      const newTransactions = await getTransactions(y, m, ledgerId)
-      setYear(y)
-      setMonth(m)
-      setTransactions(newTransactions)
-      const ledgerQuery = ledgerId ? `&ledger=${ledgerId}` : ''
-      window.history.replaceState(null, '', `/dashboard?year=${y}&month=${m}${ledgerQuery}`)
-    })
+    onDateChange(y, m)
   }
 
   function handleNavigate(deltaMonths: number) {
@@ -81,14 +88,22 @@ export function MonthController({
   }
 
   async function handleRefresh() {
-    const newTransactions = await getTransactions(year, month, ledgerId)
-    setTransactions(newTransactions)
+    setRefreshNonce((n) => n + 1)
   }
 
-  const monthlyTotal = transactions.reduce(
+  const transactions = useMemo(
+    () => (transactionsState.key === targetKey ? transactionsState.transactions : []),
+    [targetKey, transactionsState.key, transactionsState.transactions]
+  )
+  const totalBudget = budgetState.key === ledgerId ? budgetState.totalBudget : null
+  const ledgerMembers = membersState.key === ledgerId ? membersState.members : []
+  const isLoadingTransactions = transactionsState.key !== targetKey
+  const isLoading = isLoadingTransactions
+
+  const monthlyTotal = useMemo(() => transactions.reduce(
     (sum, tx) => sum + tx.amount * (tx.exchange_rate ?? 1),
     0
-  )
+  ), [transactions])
 
   const totalWarning = !totalBudget ? null
     : monthlyTotal / totalBudget >= 1 ? 'over' as const
@@ -99,11 +114,10 @@ export function MonthController({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-3">
-      <div className={`shrink-0 rounded-xl border bg-card px-4 py-3 flex items-center justify-between transition-opacity${isPending ? ' opacity-50' : ''}`}>
+      <div className={`shrink-0 rounded-xl border bg-card px-4 py-3 flex items-center justify-between transition-opacity${isLoadingTransactions ? ' opacity-80' : ''}`}>
         <MonthPicker
           year={year}
           month={month}
-          isPending={isPending}
           onNavigate={handleNavigate}
           onNavigateToToday={handleNavigateToToday}
         />
@@ -119,6 +133,9 @@ export function MonthController({
               currency: 'TWD',
               minimumFractionDigits: 0,
             }).format(monthlyTotal)}
+            {isLoadingTransactions && (
+              <span className="h-3 w-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground animate-spin" />
+            )}
             {totalWarning && (
               <AlertTriangle className={`h-4 w-4 shrink-0 ${totalWarning === 'over' ? 'text-red-500' : 'text-yellow-500'}`} />
             )}
@@ -144,6 +161,7 @@ export function MonthController({
         onJumpToToday={handleNavigateToToday}
         onRefresh={handleRefresh}
         ledgerMembers={ledgerMembers}
+        isLoading={isLoading}
       />
     </div>
   )

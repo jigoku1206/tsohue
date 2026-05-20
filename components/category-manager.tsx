@@ -181,7 +181,13 @@ function AddRow({ parentId, placeholder, onAdded }: { parentId?: string; placeho
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function CategoryManager({ initialCategories }: { initialCategories: Category[] }) {
+export function CategoryManager({
+  initialCategories,
+  isLoading,
+}: {
+  initialCategories: Category[]
+  isLoading?: boolean
+}) {
   const { updateCategoryPositions } = useActions()
   const [open, setOpen] = useState(false)
   const [cats, setCats] = useState<Category[]>(initialCategories)
@@ -239,7 +245,9 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>管理類別</Button>
+      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} disabled={isLoading}>
+        {isLoading ? '類別載入中' : '管理類別'}
+      </Button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setCats(initialCategories) }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
