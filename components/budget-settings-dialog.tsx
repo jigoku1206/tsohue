@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,11 +35,16 @@ export function BudgetSettingsDialog({ ledgerId, budgets, categories, onSaved }:
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [limits, setLimits] = useState<Record<string, string>>({})
+  const initialLimitsRef = useRef<Record<string, string>>({})
 
   const topLevelCats = categories.filter((c) => c.parent_id === null)
 
   function handleOpenChange(v: boolean) {
-    if (v) setLimits(budgetsToMap(budgets))
+    if (v) {
+      const m = budgetsToMap(budgets)
+      setLimits(m)
+      initialLimitsRef.current = m
+    }
     setOpen(v)
   }
 
@@ -50,17 +55,30 @@ export function BudgetSettingsDialog({ ledgerId, budgets, categories, onSaved }:
   async function handleSave() {
     setSaving(true)
     try {
-      const entries: [string | null, number | null][] = [
+      const allEntries: [string | null, number | null][] = [
         [null, parseFloat(limits[''] || '0') || null],
         ...topLevelCats.map((c): [string | null, number | null] => [
           c.name,
           parseFloat(limits[c.name] || '0') || null,
         ]),
       ]
-      for (const [cat, val] of entries) {
-        const res = await upsertLedgerBudget(ledgerId, cat, val)
-        if (res.error) { toast.error(res.error); return }
+
+      // Only upsert items that changed from the values when dialog was opened
+      const initial = initialLimitsRef.current
+      const changed = allEntries.filter(([cat, val]) => {
+        const key = cat ?? ''
+        const origVal = parseFloat(initial[key] || '0') || null
+        return origVal !== val
+      })
+
+      if (changed.length > 0) {
+        const results = await Promise.all(
+          changed.map(([cat, val]) => upsertLedgerBudget(ledgerId, cat, val))
+        )
+        const firstError = results.find((r) => r.error)
+        if (firstError) { toast.error(firstError.error); return }
       }
+
       onSaved()
       setOpen(false)
       toast.success('預算設定已儲存')
