@@ -145,11 +145,11 @@ export function AddTransactionDialog({
       <Button onClick={() => setOpen(true)}>+ 新增記錄</Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
-        <DialogContent className="overflow-hidden">
+        <DialogContent className="flex flex-col max-h-[90dvh]">
           <DialogHeader>
             <DialogTitle>新增消費記錄</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto flex flex-col gap-4 mt-2 pr-1">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="date">{isRecurring ? '首期日期' : '日期'}</Label>
               <Input
