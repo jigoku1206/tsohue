@@ -54,6 +54,7 @@ export function LedgerManager({
   const [savingMembers, setSavingMembers] = useState(false)
   const [renamingName, setRenamingName] = useState('')
   const [defaultCurrency, setDefaultCurrency] = useState<CurrencyCode>('TWD')
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
 
   // Create state
   const [newLedgerName, setNewLedgerName] = useState('')
@@ -148,7 +149,12 @@ export function LedgerManager({
 
   async function handleDelete() {
     if (!activeLedger) return
-    if (!confirm(`確定要刪除「${activeLedger.name}」帳本？帳本內所有消費記錄也會一併刪除。`)) return
+    setDeleteConfirm(true)
+  }
+
+  async function handleConfirmedDelete() {
+    if (!activeLedger) return
+    setDeleteConfirm(false)
     const result = await deleteLedger(activeLedger.id)
     if (result.error) {
       toast.error(result.error)
@@ -359,6 +365,27 @@ export function LedgerManager({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete ledger confirmation dialog */}
+      {deleteConfirm && activeLedger && (
+        <Dialog open={deleteConfirm} onOpenChange={(v) => { if (!v) setDeleteConfirm(false) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>確認刪除帳本</DialogTitle>
+            </DialogHeader>
+            <div className="bg-muted rounded-xl px-4 py-4 my-1">
+              <p className="font-semibold">「{activeLedger.name}」</p>
+              <p className="text-sm text-destructive mt-1">帳本內所有消費記錄也會一併永久刪除，此操作無法復原。</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirm(false)}>取消</Button>
+              <Button variant="destructive" className="flex-1 gap-1.5" onClick={handleConfirmedDelete}>
+                <Trash2 className="h-4 w-4" />確認刪除
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   )
 }

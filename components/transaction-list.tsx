@@ -50,20 +50,8 @@ export function TransactionList({
   const [editing, setEditing] = useState(false)
   const [recurringScope, setRecurringScope] = useState<'all' | 'from_date' | null>(null)
   const [scopePending, setScopePending] = useState<'edit' | 'delete' | null>(null)
-
-  async function handleDeleteSingle() {
-    if (!detail) return
-    if (!confirm('確定要刪除這筆記錄？')) return
-    setDeleting(true)
-    const result = await deleteTransaction(detail.id)
-    setDeleting(false)
-    if (result?.error) {
-      toast.error(result.error)
-    } else {
-      toast.success('已刪除')
-      setDetail(null)
-    }
-  }
+  // Custom delete-confirm state: null = no dialog, 'single' = single tx, scope = recurring
+  const [deleteConfirm, setDeleteConfirm] = useState<null | 'single' | 'all' | 'from_date'>(null)
 
   function handleEditClick() {
     if (!detail) return
@@ -79,7 +67,7 @@ export function TransactionList({
     if (detail.recurring_id) {
       setScopePending('delete')
     } else {
-      handleDeleteSingle()
+      setDeleteConfirm('single')
     }
   }
 
@@ -91,17 +79,27 @@ export function TransactionList({
       setRecurringScope(scope)
       setEditing(true)
     } else {
-      const label = scope === 'all' ? '全部週期' : '此筆及之後'
-      if (!confirm(`確定要刪除${label}的記錄？`)) return
-      setDeleting(true)
-      const result = await deleteRecurringByScope(detail.recurring_id!, detail.date, scope)
-      setDeleting(false)
-      if (result?.error) {
-        toast.error(result.error)
-      } else {
-        toast.success('已刪除')
-        setDetail(null)
-      }
+      setDeleteConfirm(scope)
+    }
+  }
+
+  async function handleConfirmedDelete() {
+    if (!detail || !deleteConfirm) return
+    const scope = deleteConfirm
+    setDeleteConfirm(null)
+    setDeleting(true)
+    let result: { error?: string | null } | undefined
+    if (scope === 'single') {
+      result = await deleteTransaction(detail.id)
+    } else {
+      result = await deleteRecurringByScope(detail.recurring_id!, detail.date, scope)
+    }
+    setDeleting(false)
+    if (result?.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('已刪除')
+      setDetail(null)
     }
   }
 
@@ -206,7 +204,7 @@ export function TransactionList({
                   variant="destructive"
                   className="flex-1 gap-1.5"
                   onClick={handleDeleteClick}
-                  disabled={deleting}
+                  disabled={deleting || !!deleteConfirm}
                 >
                   <Trash2 className="h-4 w-4" />{deleting ? '刪除中…' : '刪除'}
                 </Button>
@@ -246,6 +244,32 @@ export function TransactionList({
               >
                 取消
               </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete confirmation dialog */}
+      {deleteConfirm && detail && (
+        <Dialog open={!!deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(null) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>確認刪除</DialogTitle>
+            </DialogHeader>
+            <div className="bg-muted rounded-xl px-4 py-4 my-1">
+              <p className="font-semibold">{formatAmount(detail.amount, detail.currency ?? 'TWD')} · {detail.category}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{detail.date}{detail.note ? ` · ${detail.note}` : ''}</p>
+              {deleteConfirm !== 'single' && (
+                <p className="text-xs text-destructive mt-2">
+                  {deleteConfirm === 'all' ? '將刪除此規則的所有週期記錄' : `將刪除 ${detail.date} 起的所有未來週期記錄`}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirm(null)}>取消</Button>
+              <Button variant="destructive" className="flex-1 gap-1.5" onClick={handleConfirmedDelete} disabled={deleting}>
+                <Trash2 className="h-4 w-4" />{deleting ? '刪除中…' : '確認刪除'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
