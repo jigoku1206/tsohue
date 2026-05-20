@@ -157,7 +157,7 @@ export function AddTransactionDialog({
             <DialogTitle>新增消費記錄</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
-            <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+            <div className="grid grid-cols-[minmax(0,1fr)_6.75rem] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_7.5rem]">
               <div className="flex min-w-0 flex-col gap-1">
                 <Label htmlFor="date" className="text-xs sm:text-sm">{isRecurring ? '首期日期' : '日期'}</Label>
                 <Input
@@ -167,17 +167,17 @@ export function AddTransactionDialog({
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   required
-                  className="h-9 min-w-0 text-sm"
+                  className="h-9 w-full min-w-0 max-w-full text-sm"
                 />
               </div>
-              <label className="flex h-9 items-center gap-2 whitespace-nowrap rounded-md border px-2 text-sm cursor-pointer">
+              <label className="flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs sm:gap-2 sm:text-sm">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 accent-foreground"
+                  className="h-4 w-4 shrink-0 accent-foreground"
                   checked={isRecurring}
                   onChange={(e) => setIsRecurring(e.target.checked)}
                 />
-                <span className="text-sm font-medium leading-none">週期消費</span>
+                <span className="font-medium leading-none">週期消費</span>
               </label>
             </div>
 
