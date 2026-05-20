@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Delete } from 'lucide-react'
 
 type Operator = '+' | '-' | '×' | '÷'
@@ -134,6 +134,31 @@ export function AmountCalculator({
     })
     onChange(resultStr)
   }
+
+  // Keep a ref to all handlers so the single keydown listener never goes stale
+  const handlersRef = useRef({ inputDigit, inputDecimal, clear, backspace, handleEquals, handleOperator, percent })
+  handlersRef.current = { inputDigit, inputDecimal, clear, backspace, handleEquals, handleOperator, percent }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Ignore when focus is on a native input/select to avoid hijacking typing
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const h = handlersRef.current
+      if (/^[0-9]$/.test(e.key))                        { e.preventDefault(); h.inputDigit(e.key) }
+      else if (e.key === '.')                             { e.preventDefault(); h.inputDecimal() }
+      else if (e.key === 'Backspace')                    { e.preventDefault(); h.backspace() }
+      else if (e.key === 'Escape' || e.key === 'Delete') { e.preventDefault(); h.clear() }
+      else if (e.key === 'Enter' || e.key === '=')       { e.preventDefault(); h.handleEquals() }
+      else if (e.key === '%')                            { e.preventDefault(); h.percent() }
+      else if (e.key === '+')                            { e.preventDefault(); h.handleOperator('+') }
+      else if (e.key === '-')                            { e.preventDefault(); h.handleOperator('-') }
+      else if (e.key === '*')                            { e.preventDefault(); h.handleOperator('×') }
+      else if (e.key === '/')                            { e.preventDefault(); h.handleOperator('÷') }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, []) // mount once; handlersRef always has latest handlers
 
   const { display, expression } = state
 
