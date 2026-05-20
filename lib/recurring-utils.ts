@@ -83,16 +83,15 @@ export function prevOccurrence(
   if (startDate >= beforeDate) return null
 
   if (frequency === 'monthly') {
-    let prev: string | null = null
-    let i = 0
-    while (true) {
-      const candidate = addMonths(startDate, i)
-      if (candidate >= beforeDate) break
-      prev = candidate
-      i++
-      if (i > 1200) break // safety: ~100 years
-    }
-    return prev
+    const [sy, sm] = startDate.split('-').map(Number)
+    const [by, bm] = beforeDate.split('-').map(Number)
+    const totalMonths = (by - sy) * 12 + (bm - sm)
+    // The last occurrence strictly before beforeDate is totalMonths-1 months after start,
+    // but we must check it didn't land on or after beforeDate due to month-end clamping.
+    let i = totalMonths - 1
+    let prev = addMonths(startDate, i)
+    if (prev >= beforeDate) prev = addMonths(startDate, --i)
+    return i >= 0 ? prev : null
   } else {
     const startMs = new Date(startDate).getTime()
     const beforeMs = new Date(beforeDate).getTime()
